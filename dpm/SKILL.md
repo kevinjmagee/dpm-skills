@@ -1,10 +1,11 @@
 ---
 name: dpm
 description: >
-  Enable whole-chat DPM behavioral steering over MCP. Calls score_turn before each
-  user-facing reply with a stable visitor_ref and applies structuredContent to steer
-  depth, tone, and topics. Use when user says /dpm, /dpm on, enable dpm, dpm mode,
-  steer with dpm, or use dpm this chat. Off with /dpm off, stop dpm, or normal mode.
+  Enable whole-chat DPM behavioral steering over MCP in Cursor Agent, Plan, and Ask
+  mode. Calls score_turn before each user-facing reply with a stable visitor_ref and
+  applies structuredContent to steer depth, tone, and topics. Use when user says /dpm,
+  /dpm on, enable dpm, dpm mode, steer with dpm, or use dpm this chat. Off with
+  /dpm off, stop dpm, or normal mode.
 ---
 
 # DPM session mode
@@ -16,6 +17,8 @@ DPM scores behavior; you write the reply. While this mode is **active**, call DP
 **ACTIVE for every user-facing reply** until the user says `/dpm off`, `stop dpm`, or `normal mode` (no dpm).
 
 Do not drift off after tool-heavy turns. If unsure whether mode is on, assume **on** until explicitly turned off.
+
+`/dpm on` survives **Agent ↔ Plan ↔ Ask** switches in the **same chat**. New chat → run `/dpm on` again.
 
 Modes: `/dpm` or `/dpm on` (production scoring), `/dpm dry` (sandbox, dry_run: true), `/dpm off`, `/dpm status`.
 
@@ -29,6 +32,8 @@ Do not hardcode MCP server slugs. Use whichever connected server provides `score
 
 ## Agent loop (mandatory while active)
 
+**FORBIDDEN:** Drafting any user-facing reply, plan, or answer before `score_turn` returns.
+
 Before composing **any reply the user will read**:
 
 1. **Resolve `visitor_ref`** (see below) — same value all session unless user changes config.
@@ -36,19 +41,26 @@ Before composing **any reply the user will read**:
    - `visitor_ref` (required)
    - `message` = user's latest message (required)
    - `previous_assistant_message` = your prior assistant reply in this chat when you have one (strongly recommended)
-   - `context_hint` from config if set (optional)
-   - `agent_identity` from config or `"coding-agent"` (optional)
+   - `context_hint` — set from Cursor mode when applicable (see below)
+   - `agent_identity` from config or host-specific id (optional)
    - `dry_run: true` only when user invoked `/dpm dry` or config says so
-3. Read **`structuredContent`** from the tool result — **not** the short human `content` summary.
+3. Read **`structuredContent`** from the tool result — **not** the `content` digest alone.
 4. **Steer** your reply:
    - **First:** inject `structuredContent.guidance.system_prompt` when present
    - **Else:** use bands and directives below
-   - `intent_stage`, `receptivity`, `sophistication`, `cohort` (note `cohort.hedge`)
-   - `directives.recommended_depth`, `directives.preferred_format`, imperative flags
-   - `concepts.surface`, `avoid`, `deepen`, `scaffold`, `next`, `labels`
 5. **Then** write the user-facing reply.
 
 Default tool is **`score_turn`**. Use **`consult_space`** only for lightweight query-only steering without a full turn pair.
+
+## Cursor host modes
+
+| Mode | Call score_turn before… | context_hint | agent_identity (suggested) |
+|------|-------------------------|--------------|----------------------------|
+| Agent | Every user-facing reply | `cursor agent mode` | `cursor-coding-agent` |
+| Plan | CreatePlan output, plan revisions, direct answers | `cursor plan mode` | `cursor-plan-agent` |
+| Ask | Every explanation or answer | `cursor ask mode` | `cursor-ask-agent` |
+
+Skip `score_turn` only for pure internal tool runs with no user-facing prose. Ask/Plan read-only modes **still call MCP** — score_turn does not edit files.
 
 ## visitor_ref
 
@@ -56,7 +68,6 @@ Required on every MCP call. Identifies the **end user** within this space.
 
 - Use one **stable** ref for this chat/session (never rotate per turn).
 - Prefix conventions: `ghost_*` (anonymous), `cookie_*` (pseudonymous), or your own id.
-- Examples: `ghost_session_1`, `cookie_user_42`
 
 **Resolution order:**
 
@@ -64,13 +75,11 @@ Required on every MCP call. Identifies the **end user** within this space.
 2. If `~/.config/dpm/config.json` exists and has `visitor_ref`, use it.
 3. Else use `ghost_<short_stable_id>` derived once at session start and **reuse**.
 
-Profiles do **not** carry across different MCP space connections.
-
 ## When to skip score_turn
 
-Skip only when the turn has **no user-facing prose** — e.g. pure internal tool runs the user did not ask to be explained, or silent file edits with no summary requested.
+Skip only when the turn has **no user-facing prose** — e.g. pure internal tool runs the user did not ask to be explained.
 
-Any direct answer, explanation, or recommendation to the user **requires** scoring first while mode is active.
+Any direct answer, explanation, plan, or recommendation to the user **requires** scoring first while mode is active.
 
 ## Using structuredContent
 
@@ -79,28 +88,14 @@ Any direct answer, explanation, or recommendation to the user **requires** scori
 | `guidance.system_prompt` | **Prefer this** — paste-ready steering block |
 | `intent_stage` | Match funnel — exploratory vs ready to decide |
 | `receptivity` | Back off when resistant; be direct when receptive |
-| `sophistication` | Adjust technical depth |
-| `cohort` | Segment-aware framing (check `hedge` / confidence) |
 | `directives` | Depth, format, escalation, resistance, confusion flags |
-| `concepts.surface` | Topics to emphasize |
-| `concepts.avoid` | Topics to skip or defer |
-| `concepts.deepen` | Skip basics — user knows these |
-| `concepts.scaffold` | Explain foundations |
-| `concepts.next` | Suggested follow-ons |
-| `concepts.labels` | Human-readable names for concept ids |
+| `concepts.surface` / `avoid` | Topics to emphasize or skip |
 
-**When signals conflict:** resistant receptivity → shorter reply; do not increase depth. `escalate_to_human` → offer handoff. `cohort.hedge` → soften segment claims.
-
-DPM does **not** generate the reply text.
+The **`content`** field is a digest + reminder only — **never sufficient for steering**.
 
 ## Status command
 
-When user says `/dpm status`, report:
-
-- Active or off
-- Current `visitor_ref`
-- `dry_run` on/off
-- Which DPM MCP server you are using (if known)
+When user says `/dpm status`, report: active or off, current `visitor_ref`, `dry_run` on/off, which DPM MCP server you are using.
 
 ## Boundaries
 
