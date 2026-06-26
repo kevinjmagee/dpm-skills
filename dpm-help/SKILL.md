@@ -17,10 +17,11 @@ Display this card when invoked. **One-shot** — do NOT enable DPM mode, write f
 | `/dpm` or `/dpm on` | Enable whole-chat steering — score_turn before each user-facing reply |
 | `/dpm dry` | Same, but `dry_run: true` (sandbox; excluded from learning) |
 | `/dpm off` | Disable — stop calling DPM before replies |
-| `/dpm status` | Show active/off, visitor_ref, dry_run, MCP server |
-| `/dpm-help` | This card |
+| `/dpm status` | Show active/off, visitor_ref, dry_run, MCP server, Cursor mode hint |
 
 Also off: `stop dpm`, `normal mode` (no dpm).
+
+**Cursor:** `/dpm on` works in Agent, Plan, and Ask mode (same chat). Use `context_hint`: `cursor agent mode`, `cursor plan mode`, or `cursor ask mode`.
 
 ## Prerequisites
 
