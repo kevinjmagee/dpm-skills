@@ -4,8 +4,12 @@ description: >
   Enable whole-chat DPM behavioral steering over MCP in Cursor Agent, Plan, and Ask
   mode. Calls score_turn before each user-facing reply with a stable visitor_ref and
   applies structuredContent to steer depth, tone, and topics. Use when user says /dpm,
-  /dpm on, enable dpm, dpm mode, steer with dpm, or use dpm this chat. Off with
-  /dpm off, stop dpm, or normal mode.
+  /dpm on, enable dpm, dpm mode, steer with dpm, or use dpm this chat. Also use on
+  every subsequent user message in the same chat while DPM session mode remains active
+  until /dpm off. In Cursor Plan mode, apply before CreatePlan output and plan
+  revisions. In Ask mode, apply before every answer. Off with /dpm off, stop dpm, or
+  normal mode.
+disable-model-invocation: false
 ---
 
 # DPM session mode
@@ -21,6 +25,15 @@ Do not drift off after tool-heavy turns. If unsure whether mode is on, assume **
 `/dpm on` survives **Agent ↔ Plan ↔ Ask** switches in the **same chat**. New chat → run `/dpm on` again.
 
 Modes: `/dpm` or `/dpm on` (production scoring), `/dpm dry` (sandbox, dry_run: true), `/dpm off`, `/dpm status`.
+
+## Session state (Cursor)
+
+After `/dpm on`, treat DPM session mode as **ACTIVE** for this chat until `/dpm off`.
+Carry state across turns and Agent ↔ Plan ↔ Ask switches. If `/dpm on` appeared in
+chat history and user has not said `/dpm off`, assume **on**.
+
+While ACTIVE, your **first tool call** on each turn with user-facing output must be
+`score_turn` (skip only pure internal tool runs with no prose for the user).
 
 ## Prerequisites
 
