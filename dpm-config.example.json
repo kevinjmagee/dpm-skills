@@ -1,0 +1,6 @@
+{
+  "visitor_ref": "ghost_YOUR_ID",
+  "context_hint": "your product or channel (e.g. support chat)",
+  "dry_run": false,
+  "agent_identity": "coding-agent"
+}
