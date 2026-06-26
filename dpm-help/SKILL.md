@@ -25,7 +25,7 @@ Also off: `stop dpm`, `normal mode` (no dpm).
 ## Prerequisites
 
 1. **MCP connected** — Portal → Space Config → MCP connection → copy mcpServers JSON into your agent host.
-2. **Skills installed** — run `npx skills add kevinjmagee/dpm-skills -g -y` or download the skills ZIP from the same portal panel.
+2. **Skills installed** — run `npx skills add kevinjmagee/dpm-skills -g -y -a cursor -a claude-code -a codex` or download the skills ZIP from the same portal panel.
 
 ## Optional config
 

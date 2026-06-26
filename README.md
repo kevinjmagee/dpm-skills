@@ -5,12 +5,14 @@ Agent-agnostic [Agent Skills](https://agentskills.io) for whole-chat DPM behavio
 Install with the [skills CLI](https://skills.sh):
 
 ```bash
-# Global (all detected agents on your machine)
-npx skills add kevinjmagee/dpm-skills -g -y
+# Global (Cursor, Claude Code, Codex)
+npx skills add kevinjmagee/dpm-skills -g -y -a cursor -a claude-code -a codex
 
 # Project (commit into your repo)
-npx skills add kevinjmagee/dpm-skills -y
+npx skills add kevinjmagee/dpm-skills -y -a cursor -a claude-code -a codex
 ```
+
+Append `-a <agent>` for other hosts (e.g. `-a windsurf`). Targeting agents avoids errors from hosts that do not support global skill installs.
 
 ## Skills
 
