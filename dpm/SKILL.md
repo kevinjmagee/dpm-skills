@@ -40,12 +40,12 @@ Before composing **any reply the user will read**:
    - `agent_identity` from config or `"coding-agent"` (optional)
    - `dry_run: true` only when user invoked `/dpm dry` or config says so
 3. Read **`structuredContent`** from the tool result — **not** the short human `content` summary.
-4. **Steer** your reply using:
-   - `intent_stage` (exploring, evaluating, deciding, …)
-   - `receptivity` (receptive, neutral, resistant)
-   - `directives.recommended_depth`, `directives.preferred_format`
-   - `concepts.surface` (emphasize), `concepts.avoid` (skip)
-   - `conversation_directives` when present
+4. **Steer** your reply:
+   - **First:** inject `structuredContent.guidance.system_prompt` when present
+   - **Else:** use bands and directives below
+   - `intent_stage`, `receptivity`, `sophistication`, `cohort` (note `cohort.hedge`)
+   - `directives.recommended_depth`, `directives.preferred_format`, imperative flags
+   - `concepts.surface`, `avoid`, `deepen`, `scaffold`, `next`, `labels`
 5. **Then** write the user-facing reply.
 
 Default tool is **`score_turn`**. Use **`consult_space`** only for lightweight query-only steering without a full turn pair.
@@ -76,13 +76,20 @@ Any direct answer, explanation, or recommendation to the user **requires** scori
 
 | Field | Use |
 |-------|-----|
+| `guidance.system_prompt` | **Prefer this** — paste-ready steering block |
 | `intent_stage` | Match funnel — exploratory vs ready to decide |
 | `receptivity` | Back off when resistant; be direct when receptive |
 | `sophistication` | Adjust technical depth |
-| `cohort` | Segment-aware framing (check confidence / hedge) |
-| `directives` | Depth, format, escalation hints |
+| `cohort` | Segment-aware framing (check `hedge` / confidence) |
+| `directives` | Depth, format, escalation, resistance, confusion flags |
 | `concepts.surface` | Topics to emphasize |
 | `concepts.avoid` | Topics to skip or defer |
+| `concepts.deepen` | Skip basics — user knows these |
+| `concepts.scaffold` | Explain foundations |
+| `concepts.next` | Suggested follow-ons |
+| `concepts.labels` | Human-readable names for concept ids |
+
+**When signals conflict:** resistant receptivity → shorter reply; do not increase depth. `escalate_to_human` → offer handoff. `cohort.hedge` → soften segment claims.
 
 DPM does **not** generate the reply text.
 
