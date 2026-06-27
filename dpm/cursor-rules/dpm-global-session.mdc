@@ -1,5 +1,5 @@
 ---
-description: Global DPM session — score_turn when session.json active; visitor_ref from config.json; compact assistant echo
+description: Global DPM session — hook cache or score_turn when session.json active; visitor_ref from config.json
 alwaysApply: true
 ---
 
@@ -11,7 +11,7 @@ alwaysApply: true
 2. If `active !== true`, skip DPM for this turn.
 3. Do **not** infer session from chat history alone — the session file is authoritative across all chats.
 
-## visitor_ref (before score_turn)
+## visitor_ref
 
 1. **Read** `~/.config/dpm/config.json` for `visitor_ref`.
 2. If missing, run `node <skill-dir>/scripts/init-config.mjs` then re-read config.
@@ -19,13 +19,29 @@ alwaysApply: true
 
 ## Mandatory order (while session active)
 
-1. **First tool call:** `score_turn` on the connected DPM MCP server (before user-facing prose, plans, or Ask answers).
-2. Pass `visitor_ref` from config; set `dry_run: true` when session.json says so.
-3. Pass **`previous_assistant_message`**: user-visible prior reply, **summary-first + head+tail if >7k** (coding); exclude tool internals.
-4. Read **`structuredContent`** — prefer `guidance.system_prompt`.
-5. **Then** write the user-facing reply.
+### Hook installed (recommended — Cursor + Claude Code)
 
-**FORBIDDEN:** User-facing prose before `score_turn` returns.
+Pre-prompt hooks score each user message when `/dpm on` is active and write `~/.config/dpm/steering/<turn_key>.json`.
+
+**Cursor (Agent / Plan / Ask):**
+
+1. **First tool call:** `Read` `~/.config/dpm/steering/<generation_id>.json` when present for this turn (hook-precomputed). Use `generation_id` from hook context when available; otherwise read the newest cache file in `~/.config/dpm/steering/`.
+2. Apply **`structuredContent.guidance.system_prompt`** from the cache.
+3. **Only if cache missing or stale:** call MCP `score_turn` (fallback).
+4. **Then** write the user-facing reply, plan, or Ask answer.
+
+**Claude Code:** steering is pre-injected by the `UserPromptSubmit` hook — do **not** call MCP `score_turn` unless the hook failed (no recent cache for this session).
+
+### No hook (fallback)
+
+1. **First tool call:** MCP `score_turn` before user-facing prose.
+2. Pass `visitor_ref`, `message`, compact `previous_assistant_message`, and `context_hint`.
+3. Read **`structuredContent`** — prefer `guidance.system_prompt`.
+4. **Then** write the reply.
+
+**FORBIDDEN:** User-facing prose before steering is available (cache Read or `score_turn`).
+
+Do **not** double-score when the hook cache already contains this turn.
 
 ## Slash commands
 
@@ -36,16 +52,16 @@ alwaysApply: true
 | `/dpm off` | `node <skill-dir>/scripts/dpm-session.mjs off` |
 | `/dpm status` | `node <skill-dir>/scripts/dpm-session.mjs status` |
 
-Confirm global scope: on/off applies to **all** Cursor chats until toggled again.
+Install hooks once: `node <skill-dir>/scripts/install-dpm-hooks.mjs --all`
 
 ## Cursor modes
 
-| Mode | When to score | `context_hint` |
+| Mode | When to steer | `context_hint` |
 |------|---------------|----------------|
 | Agent | Every user-facing reply | `cursor agent mode` |
 | Plan | Before CreatePlan and plan revisions | `cursor plan mode` |
 | Ask | Every explanation or answer | `cursor ask mode` |
 
-Skip `score_turn` only for pure internal tool runs with no user-facing prose.
+Skip steering only for pure internal tool runs with no user-facing prose.
 
 Full echo spec: see `dpm` skill **Echo & compact** section.

@@ -44,23 +44,40 @@ After `on`, confirm: "DPM active globally until /dpm off" and show `visitor_ref`
 1. DPM MCP server **connected** (Portal → MCP connection → mcpServers JSON).
 2. **`init-config.mjs`** run once for per-machine `visitor_ref`.
 3. **Global rule** (Cursor only): copy `<skill-dir>/cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/`.
+4. **Pre-prompt hooks** (recommended): `node <skill-dir>/scripts/install-dpm-hooks.mjs --all --from-mcp-json .cursor/mcp.json`
 
-## Agent loop (mandatory while session active)
+## Hook-installed steering (recommended)
 
-**FORBIDDEN:** User-facing reply, plan, or answer before `score_turn` returns.
+When hooks are installed, DPM scores **before** the agent runs on each user message (while `session.json` is active):
+
+| Host | Hook | Agent action |
+|------|------|--------------|
+| Cursor | `beforeSubmitPrompt` | **Read** `~/.config/dpm/steering/<generation_id>.json`; apply `guidance.system_prompt` |
+| Claude Code | `UserPromptSubmit` | None — host injects steering via hook output |
+
+Install once:
+
+```bash
+node <skill-dir>/scripts/install-dpm-hooks.mjs --all --from-mcp-json .cursor/mcp.json
+```
+
+Do **not** call MCP `score_turn` when hook cache already contains this turn. Use MCP only as fallback.
+
+## Agent loop (mandatory while session active, no hook)
+
+**FORBIDDEN:** User-facing reply, plan, or answer before steering is available.
 
 1. **Read** `~/.config/dpm/session.json` — if not active, skip DPM.
-2. **Resolve `visitor_ref`** (see below).
-3. **Compact** your prior user-visible reply (see Echo & compact) → `previous_assistant_message`.
-4. **Call `score_turn`** with:
+2. **Try hook cache** (Cursor): Read `~/.config/dpm/steering/<generation_id>.json`.
+3. **If no cache:** call **`score_turn`** with:
    - `visitor_ref` (required)
    - `message` = user's latest message (required)
    - `previous_assistant_message` = compacted echo when you have a prior reply (strongly recommended; omit turn 0)
    - `context_hint` from host mode (see table)
    - `agent_identity` from host table (recommended)
    - `dry_run: true` when session.json or `/dpm dry` says so
-5. Read **`structuredContent`** — prefer `guidance.system_prompt`.
-6. **Then** write the user-facing reply.
+4. Read **`structuredContent`** — prefer `guidance.system_prompt`.
+5. **Then** write the user-facing reply.
 
 ## Echo & compact `previous_assistant_message`
 
