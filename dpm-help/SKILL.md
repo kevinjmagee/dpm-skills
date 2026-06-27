@@ -25,7 +25,7 @@ Also off: `stop dpm`, `normal mode` (no dpm).
 
 1. Install skills: `npx skills add kevinjmagee/dpm-skills -g -y -a cursor -a claude-code -a codex`
 2. Initialize visitor ref: `node ~/.cursor/skills/dpm/scripts/init-config.mjs`
-3. **Cursor only:** copy `cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/`
+3. **Cursor only:** copy `~/.cursor/skills/dpm/cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/`
 4. Connect MCP from Portal → type `/dpm on` once
 
 ## State files

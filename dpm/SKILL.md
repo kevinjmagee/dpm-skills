@@ -43,7 +43,7 @@ After `on`, confirm: "DPM active globally until /dpm off" and show `visitor_ref`
 
 1. DPM MCP server **connected** (Portal → MCP connection → mcpServers JSON).
 2. **`init-config.mjs`** run once for per-machine `visitor_ref`.
-3. **Global rule** (Cursor only): copy `cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/`.
+3. **Global rule** (Cursor only): copy `<skill-dir>/cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/`.
 
 ## Agent loop (mandatory while session active)
 
