@@ -21,11 +21,11 @@ Display this card when invoked. **One-shot** — do NOT enable DPM mode unless t
 
 Also off: `stop dpm`, `normal mode` (no dpm).
 
-## One-time setup (Cursor)
+## One-time setup
 
 1. Install skills: `npx skills add kevinjmagee/dpm-skills -g -y -a cursor -a claude-code -a codex`
 2. Initialize visitor ref: `node ~/.cursor/skills/dpm/scripts/init-config.mjs`
-3. Copy global rule: `cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/`
+3. **Cursor only:** copy `cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/`
 4. Connect MCP from Portal → type `/dpm on` once
 
 ## State files
@@ -35,15 +35,12 @@ Also off: `stop dpm`, `normal mode` (no dpm).
 | `~/.config/dpm/config.json` | Stable per-machine `visitor_ref` |
 | `~/.config/dpm/session.json` | Global active / dry_run |
 
-## visitor_ref
-
-Run `init-config.mjs` — creates unique `ghost_<12hex>`. **Never** use `ghost_session_cursor` or other shared generics.
-
 ## Agent loop (when session active)
 
 ```
 Read session.json → if active:
-  result = score_turn({ visitor_ref from config.json, message, ... })
+  echo = compact prior user-visible reply (summary-first + head+tail if coding and >7k)
+  result = score_turn({ visitor_ref, message, previous_assistant_message: echo, context_hint })
   reply = steered by structuredContent
 ```
 

@@ -1,5 +1,5 @@
 ---
-description: Global DPM session — score_turn when session.json active; visitor_ref from config.json
+description: Global DPM session — score_turn when session.json active; visitor_ref from config.json; compact assistant echo
 alwaysApply: true
 ---
 
@@ -21,8 +21,9 @@ alwaysApply: true
 
 1. **First tool call:** `score_turn` on the connected DPM MCP server (before user-facing prose, plans, or Ask answers).
 2. Pass `visitor_ref` from config; set `dry_run: true` when session.json says so.
-3. Read **`structuredContent`** — prefer `guidance.system_prompt`.
-4. **Then** write the user-facing reply.
+3. Pass **`previous_assistant_message`**: user-visible prior reply, **summary-first + head+tail if >7k** (coding); exclude tool internals.
+4. Read **`structuredContent`** — prefer `guidance.system_prompt`.
+5. **Then** write the user-facing reply.
 
 **FORBIDDEN:** User-facing prose before `score_turn` returns.
 
@@ -46,3 +47,5 @@ Confirm global scope: on/off applies to **all** Cursor chats until toggled again
 | Ask | Every explanation or answer | `cursor ask mode` |
 
 Skip `score_turn` only for pure internal tool runs with no user-facing prose.
+
+Full echo spec: see `dpm` skill **Echo & compact** section.

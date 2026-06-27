@@ -29,6 +29,7 @@ Then connect DPM MCP and type `/dpm on` in any chat.
 |--------|---------|
 | `scripts/init-config.mjs` | Create unique `ghost_<hex>` in `config.json` |
 | `scripts/dpm-session.mjs` | `on \| off \| dry \| status` for global session |
+| `scripts/prepare-assistant-echo.mjs` | Compact user-visible prior reply for `previous_assistant_message` |
 
 ## Skills
 

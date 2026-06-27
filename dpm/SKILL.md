@@ -1,10 +1,11 @@
 ---
 name: dpm
 description: >
-  Enable global DPM behavioral steering over MCP in Cursor Agent, Plan, and Ask mode.
-  Uses ~/.config/dpm/session.json for cross-chat persistence — when active, call
-  score_turn before each user-facing reply with a stable per-machine visitor_ref from
-  config.json. Use when user says /dpm, /dpm on, enable dpm, dpm mode, or on every
+  Enable global DPM behavioral steering over MCP in Cursor Agent, Plan, and Ask mode,
+  Claude Code, and Codex. Uses ~/.config/dpm/session.json for cross-chat persistence —
+  when active, call score_turn before each user-facing reply with a stable per-machine
+  visitor_ref from config.json. Compact previous_assistant_message (summary-first for
+  coding hosts). Use when user says /dpm, /dpm on, enable dpm, dpm mode, or on every
   turn while session.json active until /dpm off. Off with /dpm off, stop dpm, or
   normal mode.
 disable-model-invocation: false
@@ -18,12 +19,12 @@ DPM scores behavior; you write the reply. While **session.json** has `active: tr
 
 DPM session state lives in **`~/.config/dpm/session.json`**, not chat history.
 
-- **`/dpm on`** → run `node <skill-dir>/scripts/dpm-session.mjs on` — active in **all** Cursor chats until off
+- **`/dpm on`** → run `node <skill-dir>/scripts/dpm-session.mjs on` — active in **all** chats until off
 - **`/dpm off`** → run `dpm-session.mjs off` — disables globally
 - **`/dpm status`** → run `dpm-session.mjs status`
 - Survives **Agent ↔ Plan ↔ Ask** and **new composer tabs**
 
-Skill directory examples: `~/.cursor/skills/dpm/scripts/` or `~/.agents/skills/dpm/scripts/`.
+Skill directory examples: `~/.cursor/skills/dpm/scripts/`, `~/.claude/skills/dpm/scripts/`, `~/.agents/skills/dpm/scripts/`.
 
 **Every turn while active:** Read `session.json` first. If `active === true`, proceed with the agent loop below.
 
@@ -42,7 +43,7 @@ After `on`, confirm: "DPM active globally until /dpm off" and show `visitor_ref`
 
 1. DPM MCP server **connected** (Portal → MCP connection → mcpServers JSON).
 2. **`init-config.mjs`** run once for per-machine `visitor_ref`.
-3. **Global rule** installed: copy `cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/` (Cursor).
+3. **Global rule** (Cursor only): copy `cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/`.
 
 ## Agent loop (mandatory while session active)
 
@@ -50,14 +51,50 @@ After `on`, confirm: "DPM active globally until /dpm off" and show `visitor_ref`
 
 1. **Read** `~/.config/dpm/session.json` — if not active, skip DPM.
 2. **Resolve `visitor_ref`** (see below).
-3. **Call `score_turn`** with:
+3. **Compact** your prior user-visible reply (see Echo & compact) → `previous_assistant_message`.
+4. **Call `score_turn`** with:
    - `visitor_ref` (required)
    - `message` = user's latest message (required)
-   - `previous_assistant_message` when available (strongly recommended)
-   - `context_hint` from Cursor mode (see table)
+   - `previous_assistant_message` = compacted echo when you have a prior reply (strongly recommended; omit turn 0)
+   - `context_hint` from host mode (see table)
+   - `agent_identity` from host table (recommended)
    - `dry_run: true` when session.json or `/dpm dry` says so
-4. Read **`structuredContent`** — prefer `guidance.system_prompt`.
-5. **Then** write the user-facing reply.
+5. Read **`structuredContent`** — prefer `guidance.system_prompt`.
+6. **Then** write the user-facing reply.
+
+## Echo & compact `previous_assistant_message`
+
+Pair scoring uses **assistant_{N-1} + user_N**. Never merge assistant text into `message`.
+
+### Step 1 — Extract user-visible text
+
+- **Include:** explanations, recommendations, plan bodies, code blocks shown to the user, file paths in prose.
+- **Exclude:** tool-call JSON, raw diffs/patches, thinking blocks, one-line placeholders ("Done") unless that is all the user saw.
+- **After tool-heavy turns:** echo the summary/explanation you showed the user, not raw tool output.
+- **Plan mode:** on the turn after plan output, echo the plan body (compact if needed).
+
+### Step 2 — Compact (coding hosts: ≤ 7,000 chars)
+
+When the extracted echo exceeds **7,000 characters**:
+
+1. **SUMMARY** (required for coding): 1–2 sentences — what was explained, decided, or changed.
+2. **HEAD** (~3,200 chars): opening context.
+3. **MARKER:** `[... middle omitted for DPM scoring; N chars total ...]`
+4. **TAIL** (~3,200 chars): conclusions, final code snippet.
+
+Tier-3 reads the **first 4,000 chars** of the assistant echo — **SUMMARY must lead** so conclusions reach pair classification.
+
+Reference implementation: `node <skill-dir>/scripts/prepare-assistant-echo.mjs` (apply the same algorithm inline each turn).
+
+## Agent host modes
+
+| Host | Skill path | `context_hint` | `agent_identity` |
+|------|------------|----------------|------------------|
+| Cursor Agent | `~/.cursor/skills/dpm/` | `cursor agent mode` | `cursor-coding-agent` |
+| Cursor Plan | same | `cursor plan mode` | `cursor-plan-agent` |
+| Cursor Ask | same | `cursor ask mode` | `cursor-ask-agent` |
+| Claude Code | `~/.claude/skills/dpm/` | `claude code agent mode` | `claude-code-agent` |
+| Codex | `~/.agents/skills/dpm/` | `codex agent mode` | `codex-agent` |
 
 ## visitor_ref (per machine)
 
@@ -70,14 +107,6 @@ After `on`, confirm: "DPM active globally until /dpm off" and show `visitor_ref`
 **Forbidden** (never use): `ghost_session_cursor`, `ghost_cursor`, `ghost_user`, `ghost_session`, `ghost_dev`
 
 On `/dpm status`, report `visitor_ref` and source (`config.json` vs newly initialized).
-
-## Cursor host modes
-
-| Mode | Call score_turn before… | context_hint |
-|------|-------------------------|--------------|
-| Agent | Every user-facing reply | `cursor agent mode` |
-| Plan | CreatePlan output, revisions, direct answers | `cursor plan mode` |
-| Ask | Every explanation or answer | `cursor ask mode` |
 
 ## Using structuredContent
 
