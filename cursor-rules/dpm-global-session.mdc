@@ -1,0 +1,48 @@
+---
+description: Global DPM session — score_turn when session.json active; visitor_ref from config.json
+alwaysApply: true
+---
+
+# DPM global session steering
+
+## Session detection (file wins)
+
+1. **Read** `~/.config/dpm/session.json` (Windows: `%USERPROFILE%\.config\dpm\session.json`).
+2. If `active !== true`, skip DPM for this turn.
+3. Do **not** infer session from chat history alone — the session file is authoritative across all chats.
+
+## visitor_ref (before score_turn)
+
+1. **Read** `~/.config/dpm/config.json` for `visitor_ref`.
+2. If missing, run `node <skill-dir>/scripts/init-config.mjs` then re-read config.
+3. **Never** use forbidden refs: `ghost_session_cursor`, `ghost_cursor`, `ghost_user`, `ghost_session`, `ghost_dev`.
+
+## Mandatory order (while session active)
+
+1. **First tool call:** `score_turn` on the connected DPM MCP server (before user-facing prose, plans, or Ask answers).
+2. Pass `visitor_ref` from config; set `dry_run: true` when session.json says so.
+3. Read **`structuredContent`** — prefer `guidance.system_prompt`.
+4. **Then** write the user-facing reply.
+
+**FORBIDDEN:** User-facing prose before `score_turn` returns.
+
+## Slash commands
+
+| Command | Action |
+|---------|--------|
+| `/dpm on`, `/dpm` | `node <skill-dir>/scripts/dpm-session.mjs on` |
+| `/dpm dry` | `node <skill-dir>/scripts/dpm-session.mjs dry` |
+| `/dpm off` | `node <skill-dir>/scripts/dpm-session.mjs off` |
+| `/dpm status` | `node <skill-dir>/scripts/dpm-session.mjs status` |
+
+Confirm global scope: on/off applies to **all** Cursor chats until toggled again.
+
+## Cursor modes
+
+| Mode | When to score | `context_hint` |
+|------|---------------|----------------|
+| Agent | Every user-facing reply | `cursor agent mode` |
+| Plan | Before CreatePlan and plan revisions | `cursor plan mode` |
+| Ask | Every explanation or answer | `cursor ask mode` |
+
+Skip `score_turn` only for pure internal tool runs with no user-facing prose.

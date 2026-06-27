@@ -1,117 +1,89 @@
 ---
 name: dpm
 description: >
-  Enable whole-chat DPM behavioral steering over MCP in Cursor Agent, Plan, and Ask
-  mode. Calls score_turn before each user-facing reply with a stable visitor_ref and
-  applies structuredContent to steer depth, tone, and topics. Use when user says /dpm,
-  /dpm on, enable dpm, dpm mode, steer with dpm, or use dpm this chat. Also use on
-  every subsequent user message in the same chat while DPM session mode remains active
-  until /dpm off. In Cursor Plan mode, apply before CreatePlan output and plan
-  revisions. In Ask mode, apply before every answer. Off with /dpm off, stop dpm, or
+  Enable global DPM behavioral steering over MCP in Cursor Agent, Plan, and Ask mode.
+  Uses ~/.config/dpm/session.json for cross-chat persistence — when active, call
+  score_turn before each user-facing reply with a stable per-machine visitor_ref from
+  config.json. Use when user says /dpm, /dpm on, enable dpm, dpm mode, or on every
+  turn while session.json active until /dpm off. Off with /dpm off, stop dpm, or
   normal mode.
 disable-model-invocation: false
 ---
 
 # DPM session mode
 
-DPM scores behavior; you write the reply. While this mode is **active**, call DPM before every user-facing answer.
+DPM scores behavior; you write the reply. While **session.json** has `active: true`, call DPM before every user-facing answer in **any chat**.
 
-## Persistence
+## Global persistence (cross-chat)
 
-**ACTIVE for every user-facing reply** until the user says `/dpm off`, `stop dpm`, or `normal mode` (no dpm).
+DPM session state lives in **`~/.config/dpm/session.json`**, not chat history.
 
-Do not drift off after tool-heavy turns. If unsure whether mode is on, assume **on** until explicitly turned off.
+- **`/dpm on`** → run `node <skill-dir>/scripts/dpm-session.mjs on` — active in **all** Cursor chats until off
+- **`/dpm off`** → run `dpm-session.mjs off` — disables globally
+- **`/dpm status`** → run `dpm-session.mjs status`
+- Survives **Agent ↔ Plan ↔ Ask** and **new composer tabs**
 
-`/dpm on` survives **Agent ↔ Plan ↔ Ask** switches in the **same chat**. New chat → run `/dpm on` again.
+Skill directory examples: `~/.cursor/skills/dpm/scripts/` or `~/.agents/skills/dpm/scripts/`.
 
-Modes: `/dpm` or `/dpm on` (production scoring), `/dpm dry` (sandbox, dry_run: true), `/dpm off`, `/dpm status`.
+**Every turn while active:** Read `session.json` first. If `active === true`, proceed with the agent loop below.
 
-## Session state (Cursor)
+## Slash commands
 
-After `/dpm on`, treat DPM session mode as **ACTIVE** for this chat until `/dpm off`.
-Carry state across turns and Agent ↔ Plan ↔ Ask switches. If `/dpm on` appeared in
-chat history and user has not said `/dpm off`, assume **on**.
+| Command | Script |
+|---------|--------|
+| `/dpm`, `/dpm on` | `dpm-session.mjs on` |
+| `/dpm dry` | `dpm-session.mjs dry` |
+| `/dpm off`, `stop dpm` | `dpm-session.mjs off` |
+| `/dpm status` | `dpm-session.mjs status` |
 
-While ACTIVE, your **first tool call** on each turn with user-facing output must be
-`score_turn` (skip only pure internal tool runs with no prose for the user).
+After `on`, confirm: "DPM active globally until /dpm off" and show `visitor_ref`.
 
 ## Prerequisites
 
-1. A DPM MCP server must be **connected** in the host (Cursor, Claude Code, Codex, Copilot, etc.).
-2. The connected server must expose **`score_turn`** (and usually `consult_space`).
-3. If missing: user copies **mcpServers** JSON from DPM Customer Portal → Space Config → MCP connection.
+1. DPM MCP server **connected** (Portal → MCP connection → mcpServers JSON).
+2. **`init-config.mjs`** run once for per-machine `visitor_ref`.
+3. **Global rule** installed: copy `cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/` (Cursor).
 
-Do not hardcode MCP server slugs. Use whichever connected server provides `score_turn`.
+## Agent loop (mandatory while session active)
 
-## Agent loop (mandatory while active)
+**FORBIDDEN:** User-facing reply, plan, or answer before `score_turn` returns.
 
-**FORBIDDEN:** Drafting any user-facing reply, plan, or answer before `score_turn` returns.
-
-Before composing **any reply the user will read**:
-
-1. **Resolve `visitor_ref`** (see below) — same value all session unless user changes config.
-2. **Call `score_turn`** on the DPM MCP server with:
+1. **Read** `~/.config/dpm/session.json` — if not active, skip DPM.
+2. **Resolve `visitor_ref`** (see below).
+3. **Call `score_turn`** with:
    - `visitor_ref` (required)
    - `message` = user's latest message (required)
-   - `previous_assistant_message` = your prior assistant reply in this chat when you have one (strongly recommended)
-   - `context_hint` — set from Cursor mode when applicable (see below)
-   - `agent_identity` from config or host-specific id (optional)
-   - `dry_run: true` only when user invoked `/dpm dry` or config says so
-3. Read **`structuredContent`** from the tool result — **not** the `content` digest alone.
-4. **Steer** your reply:
-   - **First:** inject `structuredContent.guidance.system_prompt` when present
-   - **Else:** use bands and directives below
+   - `previous_assistant_message` when available (strongly recommended)
+   - `context_hint` from Cursor mode (see table)
+   - `dry_run: true` when session.json or `/dpm dry` says so
+4. Read **`structuredContent`** — prefer `guidance.system_prompt`.
 5. **Then** write the user-facing reply.
 
-Default tool is **`score_turn`**. Use **`consult_space`** only for lightweight query-only steering without a full turn pair.
-
-## Cursor host modes
-
-| Mode | Call score_turn before… | context_hint | agent_identity (suggested) |
-|------|-------------------------|--------------|----------------------------|
-| Agent | Every user-facing reply | `cursor agent mode` | `cursor-coding-agent` |
-| Plan | CreatePlan output, plan revisions, direct answers | `cursor plan mode` | `cursor-plan-agent` |
-| Ask | Every explanation or answer | `cursor ask mode` | `cursor-ask-agent` |
-
-Skip `score_turn` only for pure internal tool runs with no user-facing prose. Ask/Plan read-only modes **still call MCP** — score_turn does not edit files.
-
-## visitor_ref
-
-Required on every MCP call. Identifies the **end user** within this space.
-
-- Use one **stable** ref for this chat/session (never rotate per turn).
-- Prefix conventions: `ghost_*` (anonymous), `cookie_*` (pseudonymous), or your own id.
+## visitor_ref (per machine)
 
 **Resolution order:**
 
-1. If `/dpm dry` → still use same visitor_ref; set `dry_run: true` on calls.
-2. If `~/.config/dpm/config.json` exists and has `visitor_ref`, use it.
-3. Else use `ghost_<short_stable_id>` derived once at session start and **reuse**.
+1. Read `~/.config/dpm/config.json` → `visitor_ref` if set
+2. If missing: run `node <skill-dir>/scripts/init-config.mjs`, re-read config
+3. Use that ref for **all chats** on this machine — never rotate per turn
 
-## When to skip score_turn
+**Forbidden** (never use): `ghost_session_cursor`, `ghost_cursor`, `ghost_user`, `ghost_session`, `ghost_dev`
 
-Skip only when the turn has **no user-facing prose** — e.g. pure internal tool runs the user did not ask to be explained.
+On `/dpm status`, report `visitor_ref` and source (`config.json` vs newly initialized).
 
-Any direct answer, explanation, plan, or recommendation to the user **requires** scoring first while mode is active.
+## Cursor host modes
+
+| Mode | Call score_turn before… | context_hint |
+|------|-------------------------|--------------|
+| Agent | Every user-facing reply | `cursor agent mode` |
+| Plan | CreatePlan output, revisions, direct answers | `cursor plan mode` |
+| Ask | Every explanation or answer | `cursor ask mode` |
 
 ## Using structuredContent
 
-| Field | Use |
-|-------|-----|
-| `guidance.system_prompt` | **Prefer this** — paste-ready steering block |
-| `intent_stage` | Match funnel — exploratory vs ready to decide |
-| `receptivity` | Back off when resistant; be direct when receptive |
-| `directives` | Depth, format, escalation, resistance, confusion flags |
-| `concepts.surface` / `avoid` | Topics to emphasize or skip |
-
-The **`content`** field is a digest + reminder only — **never sufficient for steering**.
-
-## Status command
-
-When user says `/dpm status`, report: active or off, current `visitor_ref`, `dry_run` on/off, which DPM MCP server you are using.
+Prefer `guidance.system_prompt`. Also use `intent_stage`, `receptivity`, `directives`, `concepts.surface` / `avoid`. The MCP `content` field is a digest only.
 
 ## Boundaries
 
-- `/dpm off` or `stop dpm`: stop calling MCP before replies; answer normally.
-- `/dpm-help`: display help only; do not toggle mode.
-- Do not commit API keys or paste secrets into skill files.
+- `/dpm-help`: help card only; do not toggle session
+- Do not commit API keys or secrets

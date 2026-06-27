@@ -8,57 +8,43 @@ description: >
 
 # DPM Help
 
-Display this card when invoked. **One-shot** — do NOT enable DPM mode, write flag files, or call MCP unless the user separately asks.
+Display this card when invoked. **One-shot** — do NOT enable DPM mode unless the user separately asks.
 
 ## Commands
 
 | Command | Effect |
 |---------|--------|
-| `/dpm` or `/dpm on` | Enable whole-chat steering — score_turn before each user-facing reply |
-| `/dpm dry` | Same, but `dry_run: true` (sandbox; excluded from learning) |
-| `/dpm off` | Disable — stop calling DPM before replies |
-| `/dpm status` | Show active/off, visitor_ref, dry_run, MCP server, Cursor mode hint |
+| `/dpm` or `/dpm on` | Global ON — `dpm-session.mjs on`; score_turn in **all chats** until off |
+| `/dpm dry` | Global ON with `dry_run: true` |
+| `/dpm off` | Global OFF — `dpm-session.mjs off` |
+| `/dpm status` | Show session.json state, visitor_ref, dry_run |
 
 Also off: `stop dpm`, `normal mode` (no dpm).
 
-**Cursor:** `/dpm on` works in Agent, Plan, and Ask mode (same chat). Use `context_hint`: `cursor agent mode`, `cursor plan mode`, or `cursor ask mode`.
+## One-time setup (Cursor)
 
-## Prerequisites
+1. Install skills: `npx skills add kevinjmagee/dpm-skills -g -y -a cursor -a claude-code -a codex`
+2. Initialize visitor ref: `node ~/.cursor/skills/dpm/scripts/init-config.mjs`
+3. Copy global rule: `cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/`
+4. Connect MCP from Portal → type `/dpm on` once
 
-1. **MCP connected** — Portal → Space Config → MCP connection → copy mcpServers JSON into your agent host.
-2. **Skills installed** — run `npx skills add kevinjmagee/dpm-skills -g -y -a cursor -a claude-code -a codex` or download the skills ZIP from the same portal panel.
+## State files
 
-## Optional config
+| File | Purpose |
+|------|---------|
+| `~/.config/dpm/config.json` | Stable per-machine `visitor_ref` |
+| `~/.config/dpm/session.json` | Global active / dry_run |
 
-File: `~/.config/dpm/config.json`
+## visitor_ref
 
-```json
-{
-  "visitor_ref": "ghost_YOUR_ID",
-  "context_hint": "your surface",
-  "dry_run": false,
-  "agent_identity": "coding-agent"
-}
-```
+Run `init-config.mjs` — creates unique `ghost_<12hex>`. **Never** use `ghost_session_cursor` or other shared generics.
 
-## Agent loop (when /dpm is on)
+## Agent loop (when session active)
 
 ```
-for each user message you will answer:
-  result = score_turn({ visitor_ref, message, previous_assistant_message, ... })
-  reply = your LLM(steered by result.structuredContent, user message)
+Read session.json → if active:
+  result = score_turn({ visitor_ref from config.json, message, ... })
+  reply = steered by structuredContent
 ```
-
-Use **`structuredContent`**, not the short text summary in `content`.
-
-## Install paths
-
-| Scope | macOS / Linux | Windows |
-|-------|---------------|---------|
-| Global (cross-tool) | `~/.agents/skills/dpm/` | `%USERPROFILE%\.agents\skills\dpm\` |
-| Cursor global | `~/.cursor/skills/dpm/` | `%USERPROFILE%\.cursor\skills\dpm\` |
-| Project (team) | `.agents/skills/dpm/` in repo | same |
-
-Each folder needs a `SKILL.md` file. Also install `dpm-help/` alongside `dpm/`.
 
 Public repo: https://github.com/kevinjmagee/dpm-skills
