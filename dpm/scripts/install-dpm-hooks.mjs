@@ -7,7 +7,7 @@
  *   node install-dpm-hooks.mjs --cursor [--from-mcp-json path]
  *   node install-dpm-hooks.mjs --claude-code [--from-mcp-json path]
  */
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -108,8 +108,8 @@ function installCursorHooks(scriptsDir) {
   const existing = readJson(hooksJsonPath, { version: 1, hooks: {} });
   const hooks = existing.hooks && typeof existing.hooks === "object" ? { ...existing.hooks } : {};
 
-  const prePromptCmd = `./hooks/dpm-cursor-pre-prompt-hook.mjs`;
-  const sessionStartCmd = `./hooks/dpm-cursor-session-start-hook.mjs`;
+  const prePromptCmd = nodeScriptCommand(join(hooksDir, "dpm-cursor-pre-prompt-hook.mjs"));
+  const sessionStartCmd = nodeScriptCommand(join(hooksDir, "dpm-cursor-session-start-hook.mjs"));
 
   const beforeSubmit = Array.isArray(hooks.beforeSubmitPrompt) ? [...hooks.beforeSubmitPrompt] : [];
   const filteredBefore = beforeSubmit.filter(
