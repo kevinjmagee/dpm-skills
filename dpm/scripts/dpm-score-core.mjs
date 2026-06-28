@@ -3,11 +3,16 @@ import { resolveDefaultMcpCredentials } from "./dpm-spaces-lib.mjs";
 import { extractTranscriptEcho, stripUserQueryWrapper } from "./extract-transcript-echo.mjs";
 import { mcpScoreTurn, guidanceSystemPrompt } from "./dpm-mcp-client.mjs";
 import { writeSteeringCache, guidanceFromCache } from "./dpm-steering-cache.mjs";
+import {
+  resolveConversationForThread,
+  persistMcpSessionId,
+} from "./dpm-conversations-lib.mjs";
 
 /**
  * @param {{
  *   message: string,
  *   transcriptPath?: string | null,
+ *   threadKey?: string | null,
  *   turnKey: string,
  *   contextHint?: string,
  *   agentIdentity?: string,
@@ -28,13 +33,24 @@ export async function scoreTurnForPrompt(opts) {
 
   const visitor_ref = status.visitor_ref ?? resolveVisitorRef();
   const echo = extractTranscriptEcho(opts.transcriptPath ?? null);
+  const { conversation_id, mcp_session_id, ephemeral } = resolveConversationForThread(
+    opts.threadKey ?? null,
+  );
 
-  const structured = await mcpScoreTurn({
+  if (ephemeral) {
+    process.stderr.write(
+      "dpm-score-core: no thread key — using ephemeral conversation_id for this turn only\n",
+    );
+  }
+
+  const { structured, mcpSessionId } = await mcpScoreTurn({
     url: creds.url,
     apiKey: creds.apiKey,
+    mcpSessionId: mcp_session_id,
     arguments: {
       visitor_ref,
       message,
+      conversation_id,
       ...(echo ? { previous_assistant_message: echo } : {}),
       ...(opts.contextHint ? { context_hint: opts.contextHint } : {}),
       ...(opts.agentIdentity ? { agent_identity: opts.agentIdentity } : {}),
@@ -43,6 +59,10 @@ export async function scoreTurnForPrompt(opts) {
   });
 
   if (!structured) return null;
+
+  if (opts.threadKey && mcpSessionId) {
+    persistMcpSessionId(opts.threadKey, mcpSessionId);
+  }
 
   writeSteeringCache(opts.turnKey, structured, {
     agent_identity: opts.agentIdentity ?? "dpm-hook",

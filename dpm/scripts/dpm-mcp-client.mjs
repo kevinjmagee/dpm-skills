@@ -40,8 +40,8 @@ async function loadMcpSdk() {
 }
 
 /**
- * @param {{ url: string, apiKey: string, arguments: Record<string, unknown> }} params
- * @returns {Promise<Record<string, unknown> | null>}
+ * @param {{ url: string, apiKey: string, mcpSessionId?: string | null, arguments: Record<string, unknown> }} params
+ * @returns {Promise<{ structured: Record<string, unknown> | null, mcpSessionId: string | null }>}
  */
 export async function mcpScoreTurn(params) {
   const sdk = await loadMcpSdk();
@@ -52,12 +52,15 @@ export async function mcpScoreTurn(params) {
   }
 
   const { Client, StreamableHTTPClientTransport } = sdk;
+  const headers = {
+    Authorization: `Bearer ${params.apiKey}`,
+  };
+  if (params.mcpSessionId?.trim()) {
+    headers["Mcp-Session-Id"] = params.mcpSessionId.trim();
+  }
+
   const transport = new StreamableHTTPClientTransport(new URL(params.url), {
-    requestInit: {
-      headers: {
-        Authorization: `Bearer ${params.apiKey}`,
-      },
-    },
+    requestInit: { headers },
   });
   const client = new Client({ name: "dpm-hook", version: "1.0.0" });
   try {
@@ -67,10 +70,16 @@ export async function mcpScoreTurn(params) {
       arguments: params.arguments,
     });
     const structured = result.structuredContent;
+    const sessionId =
+      typeof transport.sessionId === "string"
+        ? transport.sessionId
+        : typeof transport._sessionId === "string"
+          ? transport._sessionId
+          : null;
     if (structured && typeof structured === "object") {
-      return structured;
+      return { structured, mcpSessionId: sessionId };
     }
-    return null;
+    return { structured: null, mcpSessionId: sessionId };
   } finally {
     await client.close();
   }

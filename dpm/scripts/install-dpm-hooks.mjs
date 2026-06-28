@@ -23,6 +23,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const HOOK_SCRIPT_NAMES = [
   "dpm-config-lib.mjs",
   "dpm-spaces-lib.mjs",
+  "dpm-conversations-lib.mjs",
   "dpm-steering-cache.mjs",
   "dpm-mcp-client.mjs",
   "dpm-score-core.mjs",

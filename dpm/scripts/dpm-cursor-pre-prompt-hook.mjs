@@ -4,6 +4,7 @@
  */
 import { scoreTurnForPrompt, resolveCursorContextHint } from "./dpm-score-core.mjs";
 import { readComposerModeCache } from "./dpm-spaces-lib.mjs";
+import { resolveThreadKey } from "./dpm-conversations-lib.mjs";
 
 async function readStdinJson() {
   const chunks = [];
@@ -28,9 +29,13 @@ async function main() {
     const composerMode = readComposerModeCache();
 
     if (prompt) {
+      const threadKey = transcriptPath
+        ? resolveThreadKey({ host: "cursor", transcriptPath })
+        : null;
       await scoreTurnForPrompt({
         message: prompt,
         transcriptPath,
+        threadKey,
         turnKey: generationId,
         contextHint: resolveCursorContextHint(composerMode),
         agentIdentity: "cursor-hook",

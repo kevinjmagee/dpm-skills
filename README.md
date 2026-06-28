@@ -66,6 +66,7 @@ Scripts live under **`dpm/scripts/`** and install with the `dpm` skill.
 | File | Purpose |
 |------|---------|
 | `~/.config/dpm/config.json` | Stable per-machine `visitor_ref` |
+| `~/.config/dpm/conversations.json` | Stable `conversation_id` per chat thread (hooks) |
 | `~/.config/dpm/session.json` | Global active / dry_run |
 | `~/.config/dpm/spaces.json` | MCP URLs (hooks) |
 | `~/.config/dpm/secrets.json` | API keys (hooks) |

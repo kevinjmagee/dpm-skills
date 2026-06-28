@@ -3,6 +3,7 @@
  * Claude Code UserPromptSubmit hook — scores via DPM when session active; injects steering.
  */
 import { scoreTurnForPrompt } from "./dpm-score-core.mjs";
+import { resolveThreadKey } from "./dpm-conversations-lib.mjs";
 
 async function readStdinJson() {
   const chunks = [];
@@ -35,9 +36,12 @@ async function main() {
       return;
     }
 
+    const threadKey = resolveThreadKey({ host: "claude", sessionId });
+
     const result = await scoreTurnForPrompt({
       message: prompt,
       transcriptPath,
+      threadKey,
       turnKey: sessionId,
       contextHint: "claude code agent mode",
       agentIdentity: "claude-code-hook",

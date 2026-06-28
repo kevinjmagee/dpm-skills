@@ -125,6 +125,15 @@ Reference implementation: `node <skill-dir>/scripts/prepare-assistant-echo.mjs` 
 
 On `/dpm status`, report `visitor_ref` and source (`config.json` vs newly initialized).
 
+## Two-key identity (`visitor_ref` + `conversation_id`)
+
+| Key | Stored in | Scope |
+|-----|-----------|-------|
+| `visitor_ref` | `~/.config/dpm/config.json` | One per machine — shared across all chats |
+| `conversation_id` | `~/.config/dpm/conversations.json` | One per composer tab (Cursor) or Claude session |
+
+Hooks derive `conversation_id` automatically (`dpm-conversations-lib.mjs`). Parallel chats on the same machine share `visitor_ref` but get distinct `conversation_id` values so session overlay accumulates within each thread.
+
 ## Using structuredContent
 
 Prefer `guidance.system_prompt`. Also use `intent_stage`, `receptivity`, `directives`, `concepts.surface` / `avoid`. The MCP `content` field is a digest only.
