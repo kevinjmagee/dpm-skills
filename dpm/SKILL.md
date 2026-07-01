@@ -41,10 +41,10 @@ After `on`, confirm: "DPM active globally until /dpm off" and show `visitor_ref`
 
 ## Prerequisites
 
-1. DPM MCP server **connected** (Portal → MCP connection → mcpServers JSON).
+1. DPM MCP server **connected** (Portal → MCP connection → mcpServers JSON). Prefer global `~/.cursor/mcp.json`; a per-repo `.cursor/mcp.json` reusing the same server name overrides it for that workspace (keep it gitignored).
 2. **`init-config.mjs`** run once for per-machine `visitor_ref`.
 3. **Global rule** (Cursor only): copy `<skill-dir>/cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/`.
-4. **Pre-prompt hooks** (recommended): `node <skill-dir>/scripts/install-dpm-hooks.mjs --all --from-mcp-json .cursor/mcp.json`
+4. **Pre-prompt hooks** (recommended): `node <skill-dir>/scripts/install-dpm-hooks.mjs --all --from-mcp-json ~/.cursor/mcp.json`
 
 ## Hook-installed steering (recommended)
 
@@ -58,7 +58,7 @@ When hooks are installed, DPM scores **before** the agent runs on each user mess
 Install once:
 
 ```bash
-node <skill-dir>/scripts/install-dpm-hooks.mjs --all --from-mcp-json .cursor/mcp.json
+node <skill-dir>/scripts/install-dpm-hooks.mjs --all --from-mcp-json ~/.cursor/mcp.json
 ```
 
 Do **not** call MCP `score_turn` when hook cache already contains this turn. Use MCP only as fallback.

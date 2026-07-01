@@ -26,8 +26,8 @@ Also off: `stop dpm`, `normal mode` (no dpm).
 1. Install skills: `npx skills add kevinjmagee/dpm-skills -g -y -a cursor -a claude-code -a codex`
 2. Initialize visitor ref: `node ~/.agents/skills/dpm/scripts/init-config.mjs`
 3. **Cursor only:** copy `~/.agents/skills/dpm/cursor-rules/dpm-global-session.mdc` → `~/.cursor/rules/`
-4. Connect MCP from Portal
-5. Install hooks: `node ~/.agents/skills/dpm/scripts/install-dpm-hooks.mjs --all --from-mcp-json .cursor/mcp.json`
+4. Connect MCP from Portal — global `~/.cursor/mcp.json` (baseline) or a gitignored per-repo `.cursor/mcp.json` with the same server name to override one repo
+5. Install hooks: `node ~/.agents/skills/dpm/scripts/install-dpm-hooks.mjs --all --from-mcp-json ~/.cursor/mcp.json`
 6. Type `/dpm on` once
 
 ## Uninstall (agent prompt)

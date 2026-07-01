@@ -48,6 +48,13 @@ function parseArgs(argv) {
   return { targets: flags, fromMcpJson };
 }
 
+function expandHome(p) {
+  if (!p) return p;
+  if (p === "~") return homedir();
+  if (p.startsWith("~/") || p.startsWith("~\\")) return join(homedir(), p.slice(2));
+  return p;
+}
+
 function readJson(path, fallback) {
   if (!existsSync(path)) return fallback;
   try {
@@ -183,7 +190,7 @@ function main() {
   }
 
   if (fromMcpJson) {
-    const resolved = resolve(fromMcpJson);
+    const resolved = resolve(expandHome(fromMcpJson));
     const imported = importFromMcpJson(resolved);
     console.log(`Imported MCP space "${imported.serverName}" into ~/.config/dpm/spaces.json`);
   }
