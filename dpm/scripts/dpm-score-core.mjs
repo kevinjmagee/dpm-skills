@@ -2,7 +2,7 @@ import { sessionStatus, resolveVisitorRef } from "./dpm-config-lib.mjs";
 import { resolveDefaultMcpCredentials } from "./dpm-spaces-lib.mjs";
 import { extractTranscriptEcho, stripUserQueryWrapper } from "./extract-transcript-echo.mjs";
 import { mcpScoreTurn, guidanceSystemPrompt } from "./dpm-mcp-client.mjs";
-import { writeSteeringCache, guidanceFromCache } from "./dpm-steering-cache.mjs";
+import { writeSteeringCache, guidanceFromCache, formatAgentSteering } from "./dpm-steering-cache.mjs";
 import {
   resolveConversationForThread,
   persistMcpSessionId,
@@ -72,10 +72,11 @@ export async function scoreTurnForPrompt(opts) {
   return {
     structuredContent: structured,
     guidance: guidanceSystemPrompt(structured),
+    structuredDigest: formatAgentSteering(structured),
   };
 }
 
-export { guidanceFromCache };
+export { guidanceFromCache, formatAgentSteering };
 
 /**
  * @param {string | null | undefined} composerMode

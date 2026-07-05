@@ -52,7 +52,7 @@ When hooks are installed, DPM scores **before** the agent runs on each user mess
 
 | Host | Hook | Agent action |
 |------|------|--------------|
-| Cursor | `beforeSubmitPrompt` | **Read** `~/.config/dpm/steering/<generation_id>.json`; apply `guidance.system_prompt` |
+| Cursor | `beforeSubmitPrompt` | **Read** `~/.config/dpm/steering/<generation_id>.json`; apply full steering via `formatAgentSteering` (coaching + structured digest) |
 | Claude Code | `UserPromptSubmit` | None — host injects steering via hook output |
 
 Install once:
@@ -76,7 +76,7 @@ Do **not** call MCP `score_turn` when hook cache already contains this turn. Use
    - `context_hint` from host mode (see table)
    - `agent_identity` from host table (recommended)
    - `dry_run: true` when session.json or `/dpm dry` says so
-4. Read **`structuredContent`** — prefer `guidance.system_prompt`.
+4. Read **`structuredContent`** — apply coaching (`guidance.system_prompt`) **and** structured `signals`, `directives`, `topics` (v3).
 5. **Then** write the user-facing reply.
 
 ## Echo & compact `previous_assistant_message`
@@ -134,9 +134,20 @@ On `/dpm status`, report `visitor_ref` and source (`config.json` vs newly initia
 
 Hooks derive `conversation_id` automatically (`dpm-conversations-lib.mjs`). Parallel chats on the same machine share `visitor_ref` but get distinct `conversation_id` values so session overlay accumulates within each thread.
 
-## Using structuredContent
+## Using structuredContent (v3 two-layer model)
 
-Prefer `guidance.system_prompt`. Also use `intent_stage`, `receptivity`, `directives`, `concepts.surface` / `avoid`. The MCP `content` field is a digest only.
+When `contract_version ≥ 3`:
+
+1. Apply **`guidance.system_prompt`** — compact coaching (hard rules + stance + psychology).
+2. Read **`signals`** — intent_stage, receptivity, sophistication, cohort.hedge.
+3. Read **`directives`** — clarify_confusion, recommended_depth, address_resistance, etc.
+4. Read **`topics`** — surface, deepen, scaffold, avoid, next as **human-readable strings only**.
+
+**Do not use:** opaque concept ids (`cN`), deprecated `concepts.*` id arrays, or `conversation_directives` blobs in v3 structuredContent.
+
+**Conflict rule:** coaching sets tone; structured fields win on facts.
+
+With hooks, apply **`formatAgentSteering`** output from cache (coaching + structured digest). The MCP `content` field is a digest only.
 
 ## Boundaries
 

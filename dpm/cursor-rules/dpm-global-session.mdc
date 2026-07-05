@@ -26,7 +26,7 @@ Pre-prompt hooks score each user message when `/dpm on` is active and write `~/.
 **Cursor (Agent / Plan / Ask):**
 
 1. **First tool call:** `Read` `~/.config/dpm/steering/<generation_id>.json` when present for this turn (hook-precomputed). Use `generation_id` from hook context when available; otherwise read the newest cache file in `~/.config/dpm/steering/`.
-2. Apply **`structuredContent.guidance.system_prompt`** from the cache.
+2. Apply **`formatAgentSteering(structuredContent)`** — coaching prompt plus compact structured digest (signals, directives, topics with human-readable names only).
 3. **Only if cache missing or stale:** call MCP `score_turn` (fallback).
 4. **Then** write the user-facing reply, plan, or Ask answer.
 
@@ -36,7 +36,7 @@ Pre-prompt hooks score each user message when `/dpm on` is active and write `~/.
 
 1. **First tool call:** MCP `score_turn` before user-facing prose.
 2. Pass `visitor_ref`, `message`, compact `previous_assistant_message`, and `context_hint`.
-3. Read **`structuredContent`** — prefer `guidance.system_prompt`.
+3. Read **`structuredContent`** — apply coaching + `signals` / `directives` / `topics` (v3).
 4. **Then** write the reply.
 
 **FORBIDDEN:** User-facing prose before steering is available (cache Read or `score_turn`).

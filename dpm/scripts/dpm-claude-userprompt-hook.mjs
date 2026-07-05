@@ -52,13 +52,15 @@ async function main() {
       return;
     }
 
+    const injection = result.structuredDigest ?? result.guidance;
+
     process.stdout.write(
       JSON.stringify({
         continue: true,
-        systemMessage: result.guidance,
+        systemMessage: injection,
         hookSpecificOutput: {
           hookEventName: "UserPromptSubmit",
-          additionalContext: result.guidance,
+          additionalContext: injection,
         },
       }),
     );

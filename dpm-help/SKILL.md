@@ -51,8 +51,19 @@ Use the Portal **one-shot agent uninstall prompt**, or run in order:
 
 ## Agent loop (when session active + hooks)
 
-**Cursor:** Read hook cache → apply `guidance.system_prompt` → reply (MCP fallback if cache missing).
+**Cursor:** Read hook cache → apply `formatAgentSteering` (coaching + structured digest) → reply (MCP fallback if cache missing).
 
-**Claude Code:** Hook injects steering — do not double-call `score_turn`.
+**Claude Code:** Hook injects full steering digest — do not double-call `score_turn`.
+
+## v3 structuredContent paths (contract_version ≥ 3)
+
+| Path | Content |
+|------|---------|
+| `guidance.system_prompt` | Compact coaching (hard rules + stance) |
+| `signals` | intent_stage, receptivity, sophistication, cohort.hedge |
+| `directives` | clarify_confusion, recommended_depth, address_resistance, … |
+| `topics` | surface, deepen, scaffold, avoid, next — **human labels only** |
+
+After edge deploys v3: `npx skills update` and re-run `install-dpm-hooks.mjs --all`.
 
 Public repo: https://github.com/kevinjmagee/dpm-skills
