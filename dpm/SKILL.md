@@ -76,7 +76,7 @@ Do **not** call MCP `score_turn` when hook cache already contains this turn. Use
    - `context_hint` from host mode (see table)
    - `agent_identity` from host table (recommended)
    - `dry_run: true` when session.json or `/dpm dry` says so
-4. Read **`structuredContent`** — apply coaching (`guidance.system_prompt`) **and** structured `signals`, `directives`, `topics` (v3).
+4. Read **`structuredContent`** — apply coaching (`guidance.system_prompt`) **and** scoped `conversation.*` + `visitor.*` (v4).
 5. **Then** write the user-facing reply.
 
 ## Echo & compact `previous_assistant_message`
@@ -134,20 +134,26 @@ On `/dpm status`, report `visitor_ref` and source (`config.json` vs newly initia
 
 Hooks derive `conversation_id` automatically (`dpm-conversations-lib.mjs`). Parallel chats on the same machine share `visitor_ref` but get distinct `conversation_id` values so session overlay accumulates within each thread.
 
-## Using structuredContent (v3 two-layer model)
+## Using structuredContent (v4 dual-scope model)
 
-When `contract_version ≥ 3`:
+On live MCP tool results, read **`_meta.dpm.contract_version`** (always `4` on v4 spaces). **`structuredContent`** carries `conversation`, `visitor`, and optional `guidance` — it does not repeat top-level `meta`.
 
-1. Apply **`guidance.system_prompt`** — compact coaching (hard rules + stance + psychology).
-2. Read **`signals`** — intent_stage, receptivity, sophistication, cohort.hedge.
-3. Read **`directives`** — clarify_confusion, recommended_depth, address_resistance, etc.
-4. Read **`topics`** — surface, deepen, scaffold, avoid, next as **human-readable strings only**.
+**Turn log note:** persisted `steering_snapshot` rows store the same `structuredContent` shape (dual scoped blocks, no top-level `meta.contract_version`). That is still v4 — UI and tooling should accept `conversation` + `visitor` without requiring `meta` on the stored blob.
 
-**Do not use:** opaque concept ids (`cN`), deprecated `concepts.*` id arrays, or `conversation_directives` blobs in v3 structuredContent.
+When v4 is active (`_meta.dpm.contract_version === 4`, or dual scoped blocks in Turn log):
 
-**Conflict rule:** coaching sets tone; structured fields win on facts.
+1. Apply **`guidance.system_prompt`** — compact reconciled coaching (hard rules + stance + psychology).
+2. Read **`conversation.signals`** — thread intent_stage, receptivity, sophistication, urgency, work_mode.
+3. Read **`conversation.directives`** — clarify_confusion, recommended_depth, address_resistance, de_escalate, etc.
+4. Read **`conversation.topics`** — surface, deepen, scaffold, avoid, next (human-readable strings only).
+5. Read **`visitor.signals`** / **`visitor.directives`** / **`visitor.topics`** — continuity (skip intro, durable avoid, returning acknowledgment).
+6. Treat **`*.cohort`** as **secondary** — trait bands and directive flags steer first (trait-first).
 
-With hooks, apply **`formatAgentSteering`** output from cache (coaching + structured digest). The MCP `content` field is a digest only.
+**Do not use:** flat top-level `signals`/`directives`/`topics`/`cohort`, opaque concept ids (`cN`), `user_profile`, `conversation_directives`, or `concepts` id arrays.
+
+**Conflict rule:** coaching sets tone; structured fields win on facts. Conversation scope wins for stance; visitor scope wins for continuity.
+
+With hooks, apply **`formatAgentSteering`** output from cache (coaching + dual-scope structured digest). The MCP `content` field is a digest only.
 
 ## Boundaries
 
