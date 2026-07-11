@@ -36,7 +36,7 @@ Pre-prompt hooks score each user message when `/dpm on` is active and write `~/.
 
 1. **First tool call:** MCP `score_turn` before user-facing prose.
 2. Pass `visitor_ref`, `message`, compact `previous_assistant_message`, and `context_hint`.
-3. Read **`structuredContent`** — apply coaching + `signals` / `directives` / `topics` (v3).
+3. Read **`structuredContent`** — apply coaching (`guidance.system_prompt`) and scoped **`conversation.*`** + **`visitor.*`** (v4 dual-scope).
 4. **Then** write the reply.
 
 **FORBIDDEN:** User-facing prose before steering is available (cache Read or `score_turn`).

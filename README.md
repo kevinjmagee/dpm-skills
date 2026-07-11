@@ -37,8 +37,9 @@ Do the following in order, asking me only if a step truly cannot proceed:
 
 1. Add (or update) an MCP server entry for this host:
    - Cursor: ~/.cursor/mcp.json (global — loads in every window and every profile, and keeps the API key out of any repo).
-   - Claude Desktop: claude_desktop_config.json
-   - Claude Code / Codex: their respective MCP config files
+   - Claude Code: ~/.claude.json → mcpServers (add "type": "http" to each entry).
+   - Codex: ~/.codex/config.toml → [mcp_servers.<name>]
+   Claude Desktop is not part of the default install (its local config requires stdio). See the manual Claude Desktop quickstart for mcp-remote setup.
    Use this entry exactly:
 
    {
