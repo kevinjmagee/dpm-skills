@@ -4,8 +4,8 @@
  */
 import { formatAgentSteering } from "./dpm-steering-cache.mjs";
 
-const v4Fixture = {
-  meta: { contract_version: 4 },
+const v5Fixture = {
+  meta: { contract_version: 5 },
   guidance: {
     system_prompt: "You are a helpful assistant.\n\nCOACHING THIS TURN\n- Keep it brief.",
   },
@@ -17,18 +17,18 @@ const v4Fixture = {
       scaffold: ["Testing"],
       avoid: ["Pricing"],
     },
-    cohort: { label: "Early Researcher", hedge: false },
+    behavior_cluster: { label: "Early Researcher", hedge: false, source: "derived" },
+    meta: { personalization_source: "system1", evidence_turns: 2, profile_version: 0 },
   },
   visitor: {
     signals: { intent_stage: "evaluating", visit_pattern: "returning" },
     directives: { skip_introductory_framing: true },
     topics: { deepen: ["API Integration"], avoid: ["Hard Sell"] },
-    cohort: { label: "Power User", hedge: false },
+    behavior_cluster: { label: "Power User", hedge: false, source: "trait" },
   },
 };
 
-const out = formatAgentSteering(v4Fixture);
-const lines = out.split("\n");
+const out = formatAgentSteering(v5Fixture);
 
 let failed = 0;
 function assert(cond, msg) {
@@ -44,12 +44,15 @@ assert(out.includes("[conversation]"), "includes conversation scope label");
 assert(out.includes("[visitor]"), "includes visitor scope label");
 assert(out.includes("Digital Marketing"), "includes conversation surface topic");
 assert(out.includes("API Integration"), "includes visitor deepen topic");
-assert(out.includes("Power User"), "includes visitor cohort label");
+assert(out.includes("Cluster: Power User"), "includes visitor behavior_cluster label");
+assert(out.includes("(trait)"), "includes visitor cluster source");
+assert(out.includes("Meta —"), "includes scoped meta line");
 assert(!/\bc\d+\b/.test(out), "no opaque concept ids");
 assert(out.includes("clarify_confusion"), "includes conversation active flag");
 assert(out.includes("skip_introductory_framing"), "includes visitor active flag");
 
-const missingLabel = formatAgentSteering({
+// v4 cohort alias still works
+const v4Out = formatAgentSteering({
   meta: { contract_version: 4 },
   guidance: { system_prompt: "Coaching only" },
   conversation: {
@@ -65,8 +68,9 @@ const missingLabel = formatAgentSteering({
     cohort: { label: "Y" },
   },
 });
-assert(!missingLabel.includes("c48"), "missing labels omitted from digest");
-assert(missingLabel.includes("[visitor]"), "visitor scope present in minimal fixture");
+assert(v4Out.includes("Cluster: X"), "v4 cohort maps to cluster label in digest");
+assert(!v4Out.includes("c48"), "missing labels omitted from digest");
+assert(v4Out.includes("[visitor]"), "visitor scope present in minimal fixture");
 
 // Legacy v3 flat fallback (test systems)
 const v3Out = formatAgentSteering({

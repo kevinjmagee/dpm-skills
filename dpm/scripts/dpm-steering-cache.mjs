@@ -96,13 +96,15 @@ function formatScopeDigest(scopeLabel, scope) {
   const signals = asObject(scope.signals);
   const directives = asObject(scope.directives);
   const topics = asObject(scope.topics);
-  const cohort = asObject(scope.cohort);
+  const cluster = asObject(scope.behavior_cluster ?? scope.cohort);
+  const scopeMeta = asObject(scope.meta);
 
   const intent = signals.intent_stage ?? "unknown";
   const receptivity = signals.receptivity;
   const depth = directives.recommended_depth ?? "moderate";
-  const cohortLabel = cohort.label ?? "unknown";
-  const hedge = cohort.hedge === true;
+  const clusterLabel = cluster.label ?? "unknown";
+  const hedge = cluster.hedge === true;
+  const clusterSource = cluster.source;
 
   const topicLine = (key) => {
     const arr = topics[key];
@@ -114,9 +116,17 @@ function formatScopeDigest(scopeLabel, scope) {
     .map(([k]) => k);
 
   const lines = [
-    `[${scopeLabel}] Intent: ${intent} | Depth: ${depth} | Cohort: ${cohortLabel}${hedge ? " (hedge)" : ""}`,
+    `[${scopeLabel}] Intent: ${intent} | Depth: ${depth} | Cluster: ${clusterLabel}${hedge ? " (hedge)" : ""}${clusterSource ? ` (${clusterSource})` : ""}`,
   ];
   if (receptivity) lines[0] += ` | Receptivity: ${receptivity}`;
+
+  const metaParts = [];
+  if (scopeMeta.personalization_source) metaParts.push(`src=${scopeMeta.personalization_source}`);
+  if (scopeMeta.evidence_turns !== undefined) metaParts.push(`ev=${scopeMeta.evidence_turns}`);
+  if (scopeMeta.profile_version !== undefined) metaParts.push(`pv=${scopeMeta.profile_version}`);
+  if (scopeMeta.label_source) metaParts.push(`label=${scopeMeta.label_source}`);
+  if (clusterSource) metaParts.push(`cluster=${clusterSource}`);
+  if (metaParts.length) lines.push(`  Meta — ${metaParts.join(" | ")}`);
 
   const surface = topicLine("surface");
   const deepen = topicLine("deepen");
@@ -150,14 +160,15 @@ export function formatAgentSteering(structured) {
 
   const meta = asObject(structured.meta);
   const contractVersion = meta.contract_version ?? structured.contract_version;
-  const isV4 =
+  const isDualScope =
+    contractVersion === 5 ||
     contractVersion === 4 ||
     (structured.conversation && typeof structured.conversation === "object") ||
     (structured.visitor && typeof structured.visitor === "object");
 
   const digestLines = ["", "STRUCTURED STEERING (authoritative)"];
 
-  if (isV4) {
+  if (isDualScope) {
     const conversation = asObject(structured.conversation);
     const visitor = asObject(structured.visitor);
     digestLines.push(...formatScopeDigest("conversation", conversation));
@@ -168,7 +179,7 @@ export function formatAgentSteering(structured) {
       signals: structured.signals,
       directives: structured.directives,
       topics: structured.topics,
-      cohort: structured.cohort,
+      behavior_cluster: structured.behavior_cluster ?? structured.cohort,
     }));
   }
 

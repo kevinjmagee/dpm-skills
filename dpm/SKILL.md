@@ -76,7 +76,7 @@ Do **not** call MCP `score_turn` when hook cache already contains this turn. Use
    - `context_hint` from host mode (see table)
    - `agent_identity` from host table (recommended)
    - `dry_run: true` when session.json or `/dpm dry` says so
-4. Read **`structuredContent`** — apply coaching (`guidance.system_prompt`) **and** scoped `conversation.*` + `visitor.*` (v4).
+4. Read **`structuredContent`** — apply coaching (`guidance.system_prompt`) **and** scoped `conversation.*` + `visitor.*` (v5).
 5. **Then** write the user-facing reply.
 
 ## Echo & compact `previous_assistant_message`
@@ -134,20 +134,20 @@ On `/dpm status`, report `visitor_ref` and source (`config.json` vs newly initia
 
 Hooks derive `conversation_id` automatically (`dpm-conversations-lib.mjs`). Parallel chats on the same machine share `visitor_ref` but get distinct `conversation_id` values so session overlay accumulates within each thread.
 
-## Using structuredContent (v4 dual-scope model)
+## Using structuredContent (v5 dual-scope model)
 
-On live MCP tool results, read **`_meta.dpm.contract_version`** (always `4` on v4 spaces). **`structuredContent`** carries `conversation`, `visitor`, and optional `guidance` — it does not repeat top-level `meta`.
+On live MCP tool results, read **`_meta.dpm.contract_version`** (always `5` on current spaces). **`structuredContent`** carries `conversation`, `visitor`, and optional `guidance` — it does not repeat top-level `meta`.
 
-**Turn log note:** persisted `steering_snapshot` rows store the same `structuredContent` shape (dual scoped blocks, no top-level `meta.contract_version`). That is still v4 — UI and tooling should accept `conversation` + `visitor` without requiring `meta` on the stored blob.
+**Turn log note:** persisted `steering_snapshot` rows store the same `structuredContent` shape (dual scoped blocks, no top-level `meta.contract_version`). UI and tooling should accept `conversation` + `visitor` without requiring `meta` on the stored blob.
 
-When v4 is active (`_meta.dpm.contract_version === 4`, or dual scoped blocks in Turn log):
+When v5 is active (`_meta.dpm.contract_version === 5`, or dual scoped blocks in Turn log):
 
 1. Apply **`guidance.system_prompt`** — compact reconciled coaching (hard rules + stance + psychology).
 2. Read **`conversation.signals`** — thread intent_stage, receptivity, sophistication, urgency, work_mode.
 3. Read **`conversation.directives`** — clarify_confusion, recommended_depth, address_resistance, de_escalate, etc.
 4. Read **`conversation.topics`** — surface, deepen, scaffold, avoid, next (human-readable strings only).
 5. Read **`visitor.signals`** / **`visitor.directives`** / **`visitor.topics`** — continuity (skip intro, durable avoid, returning acknowledgment).
-6. Treat **`*.cohort`** as **secondary** — trait bands and directive flags steer first (trait-first).
+6. Read **`*.behavior_cluster`** — WHO signal (trait cluster label + source); trait bands and directive flags steer first.
 
 **Do not use:** flat top-level `signals`/`directives`/`topics`/`cohort`, opaque concept ids (`cN`), `user_profile`, `conversation_directives`, or `concepts` id arrays.
 

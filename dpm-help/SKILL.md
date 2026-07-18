@@ -55,7 +55,7 @@ Use the Portal **one-shot agent uninstall prompt**, or run in order:
 
 **Claude Code:** Hook injects full steering digest — do not double-call `score_turn`.
 
-## v4 structuredContent paths (contract_version: 4)
+## v5 structuredContent paths (contract_version: 5)
 
 | Path | Content |
 |------|---------|
@@ -63,10 +63,11 @@ Use the Portal **one-shot agent uninstall prompt**, or run in order:
 | `conversation.signals` | Thread intent_stage, receptivity, sophistication, work_mode |
 | `conversation.directives` | clarify_confusion, recommended_depth, address_resistance, … |
 | `conversation.topics` | surface, deepen, scaffold, avoid, next — human labels only |
+| `conversation.behavior_cluster` / `visitor.behavior_cluster` | WHO signal (label, source, hedge) |
 | `visitor.signals` / `visitor.directives` / `visitor.topics` | Relationship continuity |
 
-Trait-first: steer on scoped signals and directives before cohort label semantics.
+Trait-first: steer on scoped signals and directives before behavior_cluster label semantics.
 
-After edge deploys v4: `npx skills update` and re-run `install-dpm-hooks.mjs --all`.
+After skills publish: `npx skills update` and re-run `install-dpm-hooks.mjs --all`.
 
 Public repo: https://github.com/kevinjmagee/dpm-skills

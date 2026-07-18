@@ -63,7 +63,7 @@ Do the following in order, asking me only if a step truly cannot proceed:
 5. Install pre-prompt hooks for reliable Cursor + Claude Code steering:
    node ~/.agents/skills/dpm/scripts/install-dpm-hooks.mjs --all --from-mcp-json ~/.cursor/mcp.json
 
-6. Reload MCP servers in the host, enable /dpm on, then verify a turn appears in the Portal turn log.
+6. Reload MCP servers in the host, enable /dpm on, then verify a turn appears in the Portal turn log with agent_identity cursor-hook or claude-code-hook.
 
 If the Authorization bearer token above is dpm_YOUR_API_KEY, stop and ask me to paste a real API key from the DPM portal before continuing.
 ```
