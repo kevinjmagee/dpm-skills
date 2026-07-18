@@ -101,6 +101,7 @@ function formatScopeDigest(scopeLabel, scope) {
 
   const intent = signals.intent_stage ?? "unknown";
   const receptivity = signals.receptivity;
+  const frustration = signals.frustration;
   const depth = directives.recommended_depth ?? "moderate";
   const clusterLabel = cluster.label ?? "unknown";
   const hedge = cluster.hedge === true;
@@ -115,17 +116,21 @@ function formatScopeDigest(scopeLabel, scope) {
     .filter(([, v]) => v === true)
     .map(([k]) => k);
 
-  const lines = [
-    `[${scopeLabel}] Intent: ${intent} | Depth: ${depth} | Cluster: ${clusterLabel}${hedge ? " (hedge)" : ""}${clusterSource ? ` (${clusterSource})` : ""}`,
-  ];
-  if (receptivity) lines[0] += ` | Receptivity: ${receptivity}`;
+  let header = `[${scopeLabel}] Intent: ${intent} | Depth: ${depth}`;
+  if (receptivity) header += ` | Receptivity: ${receptivity}`;
+  if (frustration) header += ` | Frustration: ${frustration}`;
+  if (!hedge && clusterLabel !== "unknown") {
+    header += ` | Cluster: ${clusterLabel}${clusterSource ? ` (${clusterSource})` : ""}`;
+  } else if (hedge) {
+    header += ` | Cluster: ${clusterLabel} (hedge)`;
+  }
+
+  const lines = [header];
 
   const metaParts = [];
   if (scopeMeta.personalization_source) metaParts.push(`src=${scopeMeta.personalization_source}`);
   if (scopeMeta.evidence_turns !== undefined) metaParts.push(`ev=${scopeMeta.evidence_turns}`);
   if (scopeMeta.profile_version !== undefined) metaParts.push(`pv=${scopeMeta.profile_version}`);
-  if (scopeMeta.label_source) metaParts.push(`label=${scopeMeta.label_source}`);
-  if (clusterSource) metaParts.push(`cluster=${clusterSource}`);
   if (metaParts.length) lines.push(`  Meta — ${metaParts.join(" | ")}`);
 
   const surface = topicLine("surface");
