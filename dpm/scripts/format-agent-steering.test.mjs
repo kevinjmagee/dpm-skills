@@ -10,7 +10,12 @@ const v5Fixture = {
     system_prompt: "You are a helpful assistant.\n\nCOACHING THIS TURN\n- Keep it brief.",
   },
   conversation: {
-    signals: { intent_stage: "exploring", receptivity: "neutral" },
+    signals: {
+      intent_stage: "exploring",
+      receptivity: "neutral",
+      verification: "high",
+      iteration_patience: "strained",
+    },
     directives: { recommended_depth: "moderate", clarify_confusion: true },
     topics: {
       surface: ["Digital Marketing"],
@@ -50,6 +55,8 @@ assert(out.includes("Meta —"), "includes scoped meta line");
 assert(!/\bc\d+\b/.test(out), "no opaque concept ids");
 assert(out.includes("clarify_confusion"), "includes conversation active flag");
 assert(out.includes("skip_introductory_framing"), "includes visitor active flag");
+assert(out.includes("Traits —") && out.includes("verification: high"), "includes WHO trait digest line");
+assert(!/\bv6\b/i.test(out), "digest has no era/version labels");
 
 // v4 cohort alias still works
 const v4Out = formatAgentSteering({

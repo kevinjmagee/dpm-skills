@@ -86,6 +86,33 @@ function asObject(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 
+/** Fold-backed WHO traits in digest (internal — never emit era/version labels). */
+const WHO_TRAIT_SIGNAL_KEYS = [
+  "iteration_patience",
+  "reply_shape",
+  "reply_shape_structure",
+  "proxy_stance",
+  "autonomy",
+  "verification",
+  "objection_load",
+  "scope_divergence",
+];
+
+/**
+ * @param {Record<string, unknown>} signals
+ * @returns {string | null}
+ */
+function formatTraitDigestLine(signals) {
+  const parts = [];
+  for (const key of WHO_TRAIT_SIGNAL_KEYS) {
+    const val = signals[key];
+    if (val !== undefined && val !== null && val !== "") {
+      parts.push(`${key}: ${String(val)}`);
+    }
+  }
+  return parts.length > 0 ? `  Traits — ${parts.join(" | ")}` : null;
+}
+
 /**
  * Format one scoped block (conversation or visitor) into digest lines.
  * @param {string} scopeLabel
@@ -132,6 +159,9 @@ function formatScopeDigest(scopeLabel, scope) {
   if (scopeMeta.evidence_turns !== undefined) metaParts.push(`ev=${scopeMeta.evidence_turns}`);
   if (scopeMeta.profile_version !== undefined) metaParts.push(`pv=${scopeMeta.profile_version}`);
   if (metaParts.length) lines.push(`  Meta — ${metaParts.join(" | ")}`);
+
+  const traitLine = formatTraitDigestLine(signals);
+  if (traitLine) lines.push(traitLine);
 
   const surface = topicLine("surface");
   const deepen = topicLine("deepen");

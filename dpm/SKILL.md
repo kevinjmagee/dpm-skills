@@ -143,8 +143,8 @@ On live MCP tool results, read **`_meta.dpm.contract_version`** (always `5` on c
 When v5 is active (`_meta.dpm.contract_version === 5`, or dual scoped blocks in Turn log):
 
 1. Apply **`guidance.system_prompt`** — compact reconciled coaching (hard rules + stance + psychology).
-2. Read **`conversation.signals`** — thread intent_stage, receptivity, sophistication, urgency, work_mode.
-3. Read **`conversation.directives`** — clarify_confusion, recommended_depth, address_resistance, de_escalate, etc.
+2. Read **`conversation.signals`** — thread intent_stage, receptivity, sophistication, urgency, work_mode, and fold-backed WHO traits when present (`proxy_stance`, `verification`, `autonomy`, `iteration_patience`, `reply_shape`, `reply_shape_structure`, `objection_load`, `scope_divergence`).
+3. Read **`conversation.directives`** — clarify_confusion, recommended_depth, address_resistance, de_escalate, lead_with_verification, preserve_visitor_autonomy, relayable_summary, etc.
 4. Read **`conversation.topics`** — surface, deepen, scaffold, avoid, next (human-readable strings only).
 5. Read **`visitor.signals`** / **`visitor.directives`** / **`visitor.topics`** — continuity (skip intro, durable avoid, returning acknowledgment).
 6. Read **`*.behavior_cluster`** — WHO signal (trait cluster label + source); trait bands and directive flags steer first.
@@ -153,7 +153,7 @@ When v5 is active (`_meta.dpm.contract_version === 5`, or dual scoped blocks in 
 
 **Conflict rule:** coaching sets tone; structured fields win on facts. Conversation scope wins for stance; visitor scope wins for continuity.
 
-With hooks, apply **`formatAgentSteering`** output from cache (coaching + dual-scope structured digest). The MCP `content` field is a digest only.
+With hooks, apply **`formatAgentSteering`** output from cache (coaching + dual-scope structured digest). The MCP `content` field is a digest only; when WHO traits are present it includes a `Traits — …` line per scope (stable names — no era/version labels).
 
 ## Boundaries
 
