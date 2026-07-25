@@ -90,7 +90,7 @@ The Portal **MCP connection** panel generates both a **Global base** and a **Pro
 
 ## Pre-prompt hooks (recommended)
 
-When `/dpm on` is active, hooks call `score_turn` before each user message:
+When `/dpm on` is active, hooks call `score_turn` before each user message (except transparency turns — see below):
 
 | Host | Hook | Delivery |
 |------|------|----------|
@@ -100,6 +100,18 @@ When `/dpm on` is active, hooks call `score_turn` before each user message:
 Install once with `install-dpm-hooks.mjs --all`. Works in Cursor Agent, Plan, and Ask.
 
 Without hooks, the agent skill calls MCP `score_turn` before each reply (fallback).
+
+Hook cache and MCP fallback both use **`formatAgentSteering`** — coaching plus a v5 dual-scope digest (`conversation.*`, `visitor.*`). When fold-backed WHO traits are present (`verification`, `autonomy`, `proxy_stance`, `iteration_patience`, `reply_shape`, etc.), the digest adds a `Traits — …` line per scope (stable field names only).
+
+## Profile transparency
+
+Ask what DPM knows about you without scoring a steering turn:
+
+| Command | MCP tool | Effect |
+|---------|----------|--------|
+| `/dpm whoami`, `/dpm profile` | `explain_profile` | Narrate profile, cluster, and trait bands for your `visitor_ref` — **no `score_turn`** |
+
+Also works for natural phrasing (“what does DPM know about me?”). Transparency turns skip hook scoring and do not write steering cache.
 
 ## Scripts
 
@@ -116,8 +128,21 @@ Scripts live under **`dpm/scripts/`** and install with the `dpm` skill.
 
 | Skill | Command |
 |-------|---------|
-| `dpm` | `/dpm`, `/dpm on`, `/dpm off`, `/dpm dry`, `/dpm status` |
+| `dpm` | `/dpm`, `/dpm on`, `/dpm off`, `/dpm dry`, `/dpm status`, `/dpm whoami`, `/dpm profile` |
 | `dpm-help` | `/dpm-help` — install reference and uninstall steps |
+
+## v5 steering (while session active)
+
+Current spaces return **`contract_version: 5`** with dual scoped blocks:
+
+| Path | Content |
+|------|---------|
+| `guidance.system_prompt` | Compact coaching (hard rules + stance) |
+| `conversation.signals` / `conversation.directives` / `conversation.topics` | Thread stance, depth, topics, WHO traits when present |
+| `visitor.signals` / `visitor.directives` / `visitor.topics` | Durable relationship continuity |
+| `*.behavior_cluster` | WHO label + source (trait bands steer first; respect `hedge`) |
+
+Trait-first: steer on scoped signals and directives before behavior_cluster label semantics. Conversation scope wins for stance; visitor scope wins for continuity guardrails.
 
 ## State files
 
@@ -138,6 +163,13 @@ Scripts live under **`dpm/scripts/`** and install with the `dpm` skill.
 4. Optional: delete `~/.config/dpm/secrets.json`, `spaces.json`, `steering/`
 
 Or use the Portal **one-shot agent uninstall prompt**.
+
+## After updates
+
+```bash
+npx skills update
+node ~/.agents/skills/dpm/scripts/install-dpm-hooks.mjs --all --from-mcp-json ~/.cursor/mcp.json
+```
 
 ## Sync / publish
 
