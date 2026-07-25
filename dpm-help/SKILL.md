@@ -18,6 +18,7 @@ Display this card when invoked. **One-shot** — do NOT enable DPM mode unless t
 | `/dpm dry` | Global ON with `dry_run: true` |
 | `/dpm off` | Global OFF — `dpm-session.mjs off` |
 | `/dpm status` | Show session.json state, visitor_ref, dry_run |
+| `/dpm whoami`, `/dpm profile` | Call MCP `explain_profile`; narrate what DPM knows (no score_turn) |
 
 Also off: `stop dpm`, `normal mode` (no dpm).
 

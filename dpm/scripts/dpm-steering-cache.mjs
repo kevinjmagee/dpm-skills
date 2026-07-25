@@ -131,6 +131,7 @@ function formatScopeDigest(scopeLabel, scope) {
   const frustration = signals.frustration;
   const depth = directives.recommended_depth ?? "moderate";
   const clusterLabel = cluster.label ?? "unknown";
+  const clusterId = cluster.cluster_id;
   const hedge = cluster.hedge === true;
   const clusterSource = cluster.source;
 
@@ -148,8 +149,10 @@ function formatScopeDigest(scopeLabel, scope) {
   if (frustration) header += ` | Frustration: ${frustration}`;
   if (!hedge && clusterLabel !== "unknown") {
     header += ` | Cluster: ${clusterLabel}${clusterSource ? ` (${clusterSource})` : ""}`;
+    if (clusterId) header += ` id=${clusterId}`;
   } else if (hedge) {
     header += ` | Cluster: ${clusterLabel} (hedge)`;
+    if (clusterId) header += ` id=${clusterId}`;
   }
 
   const lines = [header];

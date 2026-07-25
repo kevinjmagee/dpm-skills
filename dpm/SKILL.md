@@ -36,6 +36,7 @@ Skill directory examples: `~/.cursor/skills/dpm/scripts/`, `~/.claude/skills/dpm
 | `/dpm dry` | `dpm-session.mjs dry` |
 | `/dpm off`, `stop dpm` | `dpm-session.mjs off` |
 | `/dpm status` | `dpm-session.mjs status` |
+| `/dpm whoami`, `/dpm profile` | Call MCP **`explain_profile`** with config `visitor_ref`; narrate (no `score_turn`) |
 
 After `on`, confirm: "DPM active globally until /dpm off" and show `visitor_ref`.
 
@@ -65,19 +66,20 @@ Do **not** call MCP `score_turn` when hook cache already contains this turn. Use
 
 ## Agent loop (mandatory while session active, no hook)
 
-**FORBIDDEN:** User-facing reply, plan, or answer before steering is available.
+**FORBIDDEN:** User-facing reply, plan, or answer before steering is available — **except** transparency turns (`/dpm whoami`, “what does DPM know about me?”) which use **`explain_profile`** only (no score).
 
 1. **Read** `~/.config/dpm/session.json` — if not active, skip DPM.
-2. **Try hook cache** (Cursor): Read `~/.config/dpm/steering/<generation_id>.json`.
-3. **If no cache:** call **`score_turn`** with:
+2. **Transparency intent?** If the user asks what DPM knows about them → call **`explain_profile`** with `visitor_ref`, narrate, **skip score_turn** for that turn.
+3. **Try hook cache** (Cursor): Read `~/.config/dpm/steering/<generation_id>.json`.
+4. **If no cache:** call **`score_turn`** with:
    - `visitor_ref` (required)
    - `message` = user's latest message (required)
    - `previous_assistant_message` = compacted echo when you have a prior reply (strongly recommended; omit turn 0)
    - `context_hint` from host mode (see table)
    - `agent_identity` from host table (recommended)
    - `dry_run: true` when session.json or `/dpm dry` says so
-4. Read **`structuredContent`** — apply coaching (`guidance.system_prompt`) **and** scoped `conversation.*` + `visitor.*` (v5).
-5. **Then** write the user-facing reply.
+5. Read **`structuredContent`** — apply coaching (`guidance.system_prompt`) **and** scoped `conversation.*` + `visitor.*` (v5).
+6. **Then** write the user-facing reply.
 
 ## Echo & compact `previous_assistant_message`
 
