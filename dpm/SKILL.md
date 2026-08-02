@@ -70,6 +70,19 @@ Do **not** call MCP `score_turn` when hook cache already contains this turn. Use
 
 1. **Read** `~/.config/dpm/session.json` — if not active, skip DPM.
 2. **Transparency intent?** If the user asks what DPM knows about them → call **`explain_profile`** with `visitor_ref`, narrate, **skip score_turn** for that turn.
+
+### Whoami narration (`explain_profile`)
+
+When narrating `/dpm whoami`, “what does DPM know about me?”, or `/dpm profile`:
+
+1. **Profile status** — ghost/returning, evidence strength (`meta.evidence_turns`), hedge on cluster
+2. **Behavioral bands** — intent, depth, receptivity from `visitor.signals`
+3. **Topics you care about** — from `visitor.top_topics` (or merge `visitor.topics.surface` + `deepen` if absent); say “not enough signal yet” when empty
+4. **Topics to avoid** — from `visitor.topics.avoid` (hard guardrails)
+5. **Privacy boundary** — derived bands only; no raw transcripts
+
+Optional: if `conversation.top_topics` is non-empty, note “In this chat: …” for thread-local engagement.
+
 3. **Try hook cache** (Cursor): Read `~/.config/dpm/steering/<generation_id>.json`.
 4. **If no cache:** call **`score_turn`** with:
    - `visitor_ref` (required)
@@ -150,12 +163,20 @@ When v5 is active (`_meta.dpm.contract_version === 5`, or dual scoped blocks in 
 4. Read **`conversation.topics`** — surface, deepen, scaffold, avoid, next (human-readable strings only).
 5. Read **`visitor.signals`** / **`visitor.directives`** / **`visitor.topics`** — continuity (skip intro, durable avoid, returning acknowledgment).
 6. Read **`*.behavior_cluster`** — WHO signal (trait cluster label + source); trait bands and directive flags steer first.
+7. Read scoped **`*.meta.peer_gap_source`** (`trait` | `none`) before trusting **`topics.next`**.
+
+**Dual-scope collaborative filtering (CF):** Two independent CF loops — conversation (in-thread cohort) and visitor (longitudinal cohort). Scopes may diverge; `scope_divergence` is expected when this chat mood ≠ durable profile.
+
+- **Conversation CF (primary for most turns):** `conversation.topics.next` + `conversation.meta.peer_gap_source`. Peers = others in this space who behaved similarly **in this kind of conversation**. Use for in-chat topic suggestions.
+- **Visitor CF (continuity):** `visitor.topics.next` + `visitor.meta.peer_gap_source`. Peers = others like this person **over time**. Use when relationship context matters; never override `visitor.topics.avoid`.
+- **Provenance:** Only treat `topics.next` as cohort-gap CF when scoped `meta.peer_gap_source === "trait"`. When `none`, `next` may be live session overlay or scaffold — not peer recommendations.
+- **Cohort key:** When `behavior_cluster.source` is `trait`, `cluster_id` is the stable CF key; `label` is display-only. Treat `derived:*` cluster ids as provisional coaching buckets until trait peer fit clears.
 
 **Do not use:** flat top-level `signals`/`directives`/`topics`/`cohort`, opaque concept ids (`cN`), `user_profile`, `conversation_directives`, or `concepts` id arrays.
 
 **Conflict rule:** coaching sets tone; structured fields win on facts. Conversation scope wins for stance; visitor scope wins for continuity.
 
-With hooks, apply **`formatAgentSteering`** output from cache (coaching + dual-scope structured digest). The MCP `content` field is a digest only; when WHO traits are present it includes a `Traits — …` line per scope (stable names — no era/version labels).
+With hooks, apply **`formatAgentSteering`** output from cache (coaching + dual-scope structured digest). The MCP `content` field is a digest only; scoped `Meta —` lines include `peer_gap=trait|none` when present; when WHO traits are present it includes a `Traits — …` line per scope (stable names — no era/version labels).
 
 ## Boundaries
 

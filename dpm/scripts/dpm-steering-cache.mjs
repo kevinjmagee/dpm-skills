@@ -161,6 +161,7 @@ function formatScopeDigest(scopeLabel, scope) {
   if (scopeMeta.personalization_source) metaParts.push(`src=${scopeMeta.personalization_source}`);
   if (scopeMeta.evidence_turns !== undefined) metaParts.push(`ev=${scopeMeta.evidence_turns}`);
   if (scopeMeta.profile_version !== undefined) metaParts.push(`pv=${scopeMeta.profile_version}`);
+  if (scopeMeta.peer_gap_source !== undefined) metaParts.push(`peer_gap=${scopeMeta.peer_gap_source}`);
   if (metaParts.length) lines.push(`  Meta — ${metaParts.join(" | ")}`);
 
   const traitLine = formatTraitDigestLine(signals);

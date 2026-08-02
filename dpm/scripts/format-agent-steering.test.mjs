@@ -23,13 +23,19 @@ const v5Fixture = {
       avoid: ["Pricing"],
     },
     behavior_cluster: { label: "Early Researcher", hedge: false, source: "derived" },
-    meta: { personalization_source: "system1", evidence_turns: 2, profile_version: 0 },
+    meta: {
+      personalization_source: "system1",
+      evidence_turns: 2,
+      profile_version: 0,
+      peer_gap_source: "none",
+    },
   },
   visitor: {
     signals: { intent_stage: "evaluating", visit_pattern: "returning" },
     directives: { skip_introductory_framing: true },
     topics: { deepen: ["API Integration"], avoid: ["Hard Sell"] },
     behavior_cluster: { label: "Power User", hedge: false, source: "trait" },
+    meta: { peer_gap_source: "trait" },
   },
 };
 
@@ -52,6 +58,8 @@ assert(out.includes("API Integration"), "includes visitor deepen topic");
 assert(out.includes("Cluster: Power User"), "includes visitor behavior_cluster label");
 assert(out.includes("(trait)"), "includes visitor cluster source");
 assert(out.includes("Meta —"), "includes scoped meta line");
+assert(out.includes("peer_gap=none"), "includes conversation peer_gap provenance");
+assert(out.includes("peer_gap=trait"), "includes visitor peer_gap provenance");
 assert(!/\bc\d+\b/.test(out), "no opaque concept ids");
 assert(out.includes("clarify_confusion"), "includes conversation active flag");
 assert(out.includes("skip_introductory_framing"), "includes visitor active flag");

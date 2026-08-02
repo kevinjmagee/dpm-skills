@@ -101,7 +101,7 @@ Install once with `install-dpm-hooks.mjs --all`. Works in Cursor Agent, Plan, an
 
 Without hooks, the agent skill calls MCP `score_turn` before each reply (fallback).
 
-Hook cache and MCP fallback both use **`formatAgentSteering`** — coaching plus a v5 dual-scope digest (`conversation.*`, `visitor.*`). When fold-backed WHO traits are present (`verification`, `autonomy`, `proxy_stance`, `iteration_patience`, `reply_shape`, etc.), the digest adds a `Traits — …` line per scope (stable field names only).
+Hook cache and MCP fallback both use **`formatAgentSteering`** — coaching plus a v5 dual-scope digest (`conversation.*`, `visitor.*`). Scoped `Meta —` lines include `peer_gap=trait|none` when the server exports CF provenance. When fold-backed WHO traits are present (`verification`, `autonomy`, `proxy_stance`, `iteration_patience`, `reply_shape`, etc.), the digest adds a `Traits — …` line per scope (stable field names only).
 
 ## Profile transparency
 
@@ -109,7 +109,7 @@ Ask what DPM knows about you without scoring a steering turn:
 
 | Command | MCP tool | Effect |
 |---------|----------|--------|
-| `/dpm whoami`, `/dpm profile` | `explain_profile` | Narrate profile, cluster, and trait bands for your `visitor_ref` — **no `score_turn`** |
+| `/dpm whoami`, `/dpm profile` | `explain_profile` | Narrate profile, cluster, trait bands, **`top_topics`**, and avoid lists for your `visitor_ref` — **no `score_turn`** |
 
 Also works for natural phrasing (“what does DPM know about me?”). Transparency turns skip hook scoring and do not write steering cache.
 
@@ -141,8 +141,9 @@ Current spaces return **`contract_version: 5`** with dual scoped blocks:
 | `conversation.signals` / `conversation.directives` / `conversation.topics` | Thread stance, depth, topics, WHO traits when present |
 | `visitor.signals` / `visitor.directives` / `visitor.topics` | Durable relationship continuity |
 | `*.behavior_cluster` | WHO label + source (trait bands steer first; respect `hedge`) |
+| `*.meta.peer_gap_source` | CF provenance for `topics.next` (`trait` = peer cohort gap; `none` = overlay/scaffold) |
 
-Trait-first: steer on scoped signals and directives before behavior_cluster label semantics. Conversation scope wins for stance; visitor scope wins for continuity guardrails.
+Trait-first: steer on scoped signals and directives before behavior_cluster label semantics. Read `peer_gap_source` before treating `topics.next` as collaborative-filtering peer suggestions. Conversation CF steers most turns; visitor CF supports continuity. Conversation scope wins for stance; visitor scope wins for continuity guardrails.
 
 ## State files
 
